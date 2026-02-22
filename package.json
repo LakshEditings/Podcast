@@ -1,0 +1,12 @@
+{
+    "name": "podcast-app",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "install:all": "cd USER/frontend && npm install && cd ../../CREATOR/frontend && npm install && cd ../../ADMIN/frontend && npm install",
+        "build:user": "cd USER/frontend && npm run build",
+        "build:creator": "cd CREATOR/frontend && npm run build",
+        "build:admin": "cd ADMIN/frontend && npm run build",
+        "build": "npm run build:user && npm run build:creator && npm run build:admin && node scripts/merge-builds.js"
+    }
+}

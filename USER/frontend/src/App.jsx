@@ -46,7 +46,7 @@ function AppContent() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/user">
       <AppContent />
     </BrowserRouter>
   );

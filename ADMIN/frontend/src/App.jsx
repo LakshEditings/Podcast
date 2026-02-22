@@ -35,5 +35,9 @@ function AppContent() {
 }
 
 export default function App() {
-  return (<BrowserRouter><AppContent /></BrowserRouter>);
+  return (
+    <BrowserRouter basename="/admin">
+      <AppContent />
+    </BrowserRouter>
+  );
 }

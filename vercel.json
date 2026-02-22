@@ -1,0 +1,19 @@
+{
+    "installCommand": "cd USER/frontend && npm install && cd ../../CREATOR/frontend && npm install && cd ../../ADMIN/frontend && npm install",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "rewrites": [
+        {
+            "source": "/user/(.*)",
+            "destination": "/user/index.html"
+        },
+        {
+            "source": "/creator/(.*)",
+            "destination": "/creator/index.html"
+        },
+        {
+            "source": "/admin/(.*)",
+            "destination": "/admin/index.html"
+        }
+    ]
+}
