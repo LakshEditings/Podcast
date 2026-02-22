@@ -40,7 +40,8 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .player-page { min-height:100vh; padding:20px; display:flex; flex-direction:column; background:linear-gradient(180deg, #2a333d 0%, var(--bg-dark) 50%); }
         .player-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
         .p-back { width:40px; height:40px; border-radius:50%; background:var(--bg-card); color:var(--text-primary); display:flex; align-items:center; justify-content:center; border:1px solid var(--border); }
-        .p-np { font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:1px; }
+        .p-np { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; background:linear-gradient(90deg, var(--text-muted) 0%, var(--text-muted) 30%, #E2E0C8 50%, var(--text-muted) 70%, var(--text-muted) 100%); background-size:200% 100%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:shine 2.5s ease-in-out infinite; }
+        @keyframes shine { 0% { background-position:200% center; } 100% { background-position:-200% center; } }
         .player-art { width:240px; height:240px; border-radius:var(--radius-xl); margin:0 auto 32px; display:flex; align-items:center; justify-content:center; font-size:6rem; box-shadow:var(--shadow-lg); }
         .player-info { text-align:center; margin-bottom:24px; }
         .player-info h1 { font-size:1.4rem; font-weight:800; margin-bottom:4px; }

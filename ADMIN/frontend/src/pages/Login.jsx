@@ -1,12 +1,25 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 
 export default function Login() {
-    const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
-    const [showPass, setShowPass] = useState(false); const [loading, setLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPass, setShowPass] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
-    const handleLogin = (e) => { e.preventDefault(); setLoading(true); setTimeout(() => { setLoading(false); navigate('/'); }, 1200); };
+
+    const handleLogin = (e) => {
+        e.preventDefault();
+        setError('');
+        if (email === 'admin@test.com' && password === '123456') {
+            setLoading(true);
+            setTimeout(() => { setLoading(false); navigate('/'); }, 1200);
+        } else {
+            setError('Invalid email or password. Try admin@test.com / 123456');
+        }
+    };
 
     return (
         <>
@@ -31,6 +44,7 @@ export default function Login() {
         .auth-btn:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
         .auth-btn:disabled { opacity:0.7; }
         .spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.6s linear infinite; }
+        .auth-error { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:#f87171; padding:10px 16px; border-radius:var(--radius-md); font-size:0.8rem; margin-bottom:16px; animation:fadeIn 0.3s ease-out; }
       `}</style>
             <div className="auth-page">
                 <div className="auth-bg"><div className="circle c1" /><div className="circle c2" /><div className="circle c3" /></div>
@@ -38,6 +52,7 @@ export default function Login() {
                     <div className="auth-logo">🛡️</div>
                     <h1>Admin Login</h1>
                     <p className="auth-subtitle">Access the admin dashboard</p>
+                    {error && <div className="auth-error">{error}</div>}
                     <form onSubmit={handleLogin}>
                         <div className="input-group"><FiMail className="input-icon" /><input type="email" placeholder="Admin email" value={email} onChange={e => setEmail(e.target.value)} required /></div>
                         <div className="input-group"><FiLock className="input-icon" /><input type={showPass ? 'text' : 'password'} placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required /><button type="button" className="input-toggle" onClick={() => setShowPass(!showPass)}>{showPass ? <FiEyeOff size={16} /> : <FiEye size={16} />}</button></div>
