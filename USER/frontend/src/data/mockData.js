@@ -46,4 +46,20 @@ export const mockPolls = [
     { id: 2, question: 'Preferred episode length?', options: [{ text: '15-30 minutes', votes: 412 }, { text: '30-45 minutes', votes: 567 }, { text: '45-60 minutes', votes: 234 }, { text: '60+ minutes', votes: 89 }] },
 ];
 
+// Points formula: Each correct answer = max 100 pts. Faster = more pts.
+// Points per Q = max(10, 100 - (timeTaken * 9))  where timeTaken is in seconds
+// Total points = sum of points for each correctly answered question
+export const mockLeaderboard = [
+    { rank: 1, name: 'Priya Kumar', avatar: '🥇', correct: 3, totalQ: 3, avgTime: 2.1, points: 285, streak: 5 },
+    { rank: 2, name: 'Alex Morgan', avatar: '🥈', correct: 3, totalQ: 3, avgTime: 4.3, points: 261, streak: 3 },
+    { rank: 3, name: 'Jordan Lee', avatar: '🥉', correct: 3, totalQ: 3, avgTime: 6.8, points: 237, streak: 7 },
+    { rank: 4, name: 'Sam Wilson', avatar: '👤', correct: 2, totalQ: 3, avgTime: 3.2, points: 178, streak: 1 },
+    { rank: 5, name: 'Taylor Davis', avatar: '👤', correct: 2, totalQ: 3, avgTime: 5.5, points: 155, streak: 2 },
+    { rank: 6, name: 'Mike Chen', avatar: '👤', correct: 2, totalQ: 3, avgTime: 7.1, points: 142, streak: 0 },
+    { rank: 7, name: 'Emma Garcia', avatar: '👤', correct: 1, totalQ: 3, avgTime: 3.0, points: 91, streak: 0 },
+    { rank: 8, name: 'Chris Park', avatar: '👤', correct: 1, totalQ: 3, avgTime: 8.2, points: 62, streak: 1 },
+    { rank: 9, name: 'Nina Patel', avatar: '👤', correct: 1, totalQ: 3, avgTime: 9.5, points: 44, streak: 0 },
+    { rank: 10, name: 'You', avatar: '⭐', correct: 0, totalQ: 3, avgTime: 0, points: 0, streak: 0, isUser: true },
+];
+
 export const languages = ['English', 'Hindi', 'Spanish', 'French', 'Tamil', 'Telugu', 'Japanese', 'Korean', 'Mandarin', 'German'];

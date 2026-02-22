@@ -7,12 +7,18 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [showPass, setShowPass] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleLogin = (e) => {
         e.preventDefault();
-        setLoading(true);
-        setTimeout(() => { setLoading(false); navigate('/'); }, 1200);
+        setError('');
+        if (email === 'user@test.com' && password === '123456') {
+            setLoading(true);
+            setTimeout(() => { setLoading(false); navigate('/'); }, 1200);
+        } else {
+            setError('Invalid email or password. Try user@test.com / 123456');
+        }
     };
 
     return (
@@ -40,6 +46,7 @@ export default function Login() {
         .spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.6s linear infinite; }
         .auth-link { margin-top:24px; font-size:0.82rem; color:var(--text-muted); }
         .auth-link a { color:var(--accent); font-weight:600; }
+        .auth-error { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:#f87171; padding:10px 16px; border-radius:var(--radius-md); font-size:0.8rem; margin-bottom:16px; animation:fadeIn 0.3s ease-out; }
       `}</style>
             <div className="auth-page">
                 <div className="auth-bg"><div className="circle c1" /><div className="circle c2" /><div className="circle c3" /></div>
@@ -47,6 +54,7 @@ export default function Login() {
                     <div className="auth-logo">🎧</div>
                     <h1>Welcome Back</h1>
                     <p className="auth-subtitle">Sign in to continue listening</p>
+                    {error && <div className="auth-error">{error}</div>}
                     <form onSubmit={handleLogin}>
                         <div className="input-group"><FiMail className="input-icon" /><input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} required /></div>
                         <div className="input-group">

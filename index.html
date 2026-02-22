@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Podcast — Choose Your Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background: #0f1318;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* animated background blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.18;
+            animation: float 12s ease-in-out infinite;
+        }
+
+        .blob-1 {
+            width: 400px;
+            height: 400px;
+            background: #5C7285;
+            top: -100px;
+            left: -50px;
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            width: 350px;
+            height: 350px;
+            background: #818C78;
+            bottom: -80px;
+            right: -40px;
+            animation-delay: -4s;
+        }
+
+        .blob-3 {
+            width: 280px;
+            height: 280px;
+            background: #A7B49E;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -8s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -30px) scale(1.08);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.94);
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            margin-bottom: 8px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #f0f0f0;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #A7B49E, #E2E0C8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeIn 0.6s ease-out 0.1s both;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 48px;
+            font-weight: 400;
+            animation: fadeIn 0.6s ease-out 0.2s both;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        @media(max-width:700px) {
+            .cards {
+                grid-template-columns: 1fr;
+                max-width: 340px;
+                margin: 0 auto;
+            }
+        }
+
+        .card {
+            background: rgba(35, 42, 50, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid #333d48;
+            border-radius: 20px;
+            padding: 40px 28px;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeIn 0.5s ease-out both;
+        }
+
+        .card:nth-child(1) {
+            animation-delay: 0.3s;
+        }
+
+        .card:nth-child(2) {
+            animation-delay: 0.45s;
+        }
+
+        .card:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--card-accent);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px var(--card-glow);
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 20px;
+            background: var(--card-bg);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.1) rotate(-3deg);
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f0f0f0;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 0.82rem;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .card-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: white;
+            background: var(--card-gradient);
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .card:hover .card-btn {
+            box-shadow: 0 4px 20px var(--card-glow);
+        }
+
+        .card-btn svg {
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .card-btn svg {
+            transform: translateX(4px);
+        }
+
+        /* Admin card */
+        .card.admin {
+            --card-accent: rgba(248, 113, 113, 0.5);
+            --card-glow: rgba(248, 113, 113, 0.15);
+            --card-bg: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.05));
+            --card-gradient: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        /* Creator card */
+        .card.creator {
+            --card-accent: rgba(167, 180, 158, 0.5);
+            --card-glow: rgba(167, 180, 158, 0.15);
+            --card-bg: linear-gradient(135deg, rgba(167, 180, 158, 0.15), rgba(129, 140, 120, 0.05));
+            --card-gradient: linear-gradient(135deg, #5C7285, #818C78);
+        }
+
+        /* Listener card */
+        .card.listener {
+            --card-accent: rgba(99, 179, 237, 0.5);
+            --card-glow: rgba(99, 179, 237, 0.15);
+            --card-bg: linear-gradient(135deg, rgba(99, 179, 237, 0.15), rgba(99, 179, 237, 0.05));
+            --card-gradient: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.72rem;
+            color: #4a5568;
+            animation: fadeIn 0.6s ease-out 0.8s both;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="container">
+        <div class="logo">🎙️</div>
+        <h1>Podcast</h1>
+        <p class="subtitle">Choose your portal to continue</p>
+
+        <div class="cards">
+            <!-- ADMIN -->
+            <a href="http://localhost:5175/login" class="card admin">
+                <div class="card-icon">🛡️</div>
+                <h2>Admin</h2>
+                <p>Manage users, creators, content moderation, categories & platform reports</p>
+                <span class="card-btn">
+                    Admin Panel
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </span>
+            </a>
+
+            <!-- CREATOR -->
+            <a href="http://localhost:5174/login" class="card creator">
+                <div class="card-icon">🎧</div>
+                <h2>Creator</h2>
+                <p>Upload podcasts, view analytics, manage subscribers & grow your audience</p>
+                <span class="card-btn">
+                    Creator Studio
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </span>
+            </a>
+
+            <!-- LISTENER -->
+            <a href="http://localhost:5173/login" class="card listener">
+                <div class="card-icon">🎵</div>
+                <h2>Listener</h2>
+                <p>Discover podcasts, play episodes, take quizzes & build your library</p>
+                <span class="card-btn">
+                    Start Listening
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </span>
+            </a>
+        </div>
+    </div>
+
+    <p class="footer">© 2026 Podcast App — All rights reserved</p>
+</body>
+
+</html>
