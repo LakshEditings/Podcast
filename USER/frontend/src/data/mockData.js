@@ -41,6 +41,48 @@ export const mockQuiz = {
     ]
 };
 
+// 5 Quiz questions per episode — shown at end of episode on Listener side
+export const mockEpisodeQuizzes = {
+    1: [
+        { question: 'What year was the term "Artificial Intelligence" coined?', options: ['1943', '1956', '1967', '1980'], correct: 1 },
+        { question: 'Which AI model is known for generating images from text?', options: ['BERT', 'DALL-E', 'GPT-2', 'ResNet'], correct: 1 },
+        { question: 'What does LLM stand for?', options: ['Large Language Model', 'Linear Logic Machine', 'Linked Learning Module', 'Low Latency Memory'], correct: 0 },
+        { question: 'Which company developed the Transformer architecture?', options: ['OpenAI', 'Meta', 'Google', 'Apple'], correct: 2 },
+        { question: 'What is "hallucination" in AI?', options: ['A visual glitch', 'Generating false information confidently', 'An error in training', 'A type of neural network'], correct: 1 },
+    ],
+    2: [
+        { question: 'What blockchain does Ethereum use?', options: ['Proof of Work', 'Proof of Stake', 'Proof of Authority', 'Proof of Burn'], correct: 1 },
+        { question: 'What is a "smart contract"?', options: ['A legal document', 'Self-executing code on blockchain', 'An AI assistant', 'A type of wallet'], correct: 1 },
+        { question: 'Who created Bitcoin?', options: ['Elon Musk', 'Satoshi Nakamoto', 'Vitalik Buterin', 'Mark Zuckerberg'], correct: 1 },
+        { question: 'What does "DeFi" stand for?', options: ['Default Finance', 'Decentralized Finance', 'Digital Finance', 'Defined Finance'], correct: 1 },
+        { question: 'What is an NFT?', options: ['New File Type', 'Non-Fungible Token', 'Network Free Transfer', 'Node Function Tool'], correct: 1 },
+    ],
+    3: [
+        { question: 'How many qubits does a basic quantum computer need?', options: ['1', '2', '50+', 'Depends on task'], correct: 3 },
+        { question: 'What is quantum entanglement?', options: ['Particles linked regardless of distance', 'A type of encryption', 'Quantum error', 'Slow processing'], correct: 0 },
+        { question: 'What is superposition in quantum computing?', options: ['Being in multiple states simultaneously', 'Being faster', 'Having more memory', 'Being connected'], correct: 0 },
+        { question: 'Which company built the first 1000+ qubit processor?', options: ['Google', 'IBM', 'Microsoft', 'Intel'], correct: 1 },
+        { question: 'What problem can quantum computers solve faster?', options: ['Word processing', 'Factoring large numbers', 'Web browsing', 'Video editing'], correct: 1 },
+    ],
+};
+
+// Poll flags — polls placed at specific timestamps during episode playback
+// percentage = position on the timeline (0-100%), shown as popup on Listener side
+export const mockPollFlags = {
+    1: [
+        { id: 'p1', percentage: 25, question: 'Do you think AI will replace most jobs by 2030?', options: [{ text: 'Yes, definitely', votes: 342 }, { text: 'Only some jobs', votes: 567 }, { text: 'No way', votes: 201 }] },
+        { id: 'p2', percentage: 60, question: 'Which AI tool do you use the most?', options: [{ text: 'ChatGPT', votes: 890 }, { text: 'Gemini', votes: 456 }, { text: 'Claude', votes: 234 }, { text: 'None', votes: 120 }] },
+        { id: 'p3', percentage: 85, question: 'Should AI art be copyrightable?', options: [{ text: 'Yes', votes: 312 }, { text: 'No', votes: 445 }, { text: 'Depends', votes: 523 }] },
+    ],
+    2: [
+        { id: 'p4', percentage: 30, question: 'Have you invested in crypto?', options: [{ text: 'Yes, actively', votes: 234 }, { text: 'Just a little', votes: 456 }, { text: 'Never', votes: 310 }] },
+        { id: 'p5', percentage: 70, question: 'What\'s the future of Web3?', options: [{ text: 'It\'s the future', votes: 345 }, { text: 'Overhyped', votes: 567 }, { text: 'Too early to tell', votes: 388 }] },
+    ],
+    3: [
+        { id: 'p6', percentage: 40, question: 'Would you trust a quantum computer with your data?', options: [{ text: 'Absolutely', votes: 123 }, { text: 'Not yet', votes: 456 }, { text: 'Never', votes: 221 }] },
+    ],
+};
+
 export const mockPolls = [
     { id: 1, question: 'What topic should we cover next?', options: [{ text: 'Blockchain & Crypto', votes: 234 }, { text: 'Cybersecurity Basics', votes: 189 }, { text: 'AR/VR Future', votes: 156 }, { text: 'Green Technology', votes: 201 }] },
     { id: 2, question: 'Preferred episode length?', options: [{ text: '15-30 minutes', votes: 412 }, { text: '30-45 minutes', votes: 567 }, { text: '45-60 minutes', votes: 234 }, { text: '60+ minutes', votes: 89 }] },
@@ -50,16 +92,16 @@ export const mockPolls = [
 // Points per Q = max(10, 100 - (timeTaken * 9))  where timeTaken is in seconds
 // Total points = sum of points for each correctly answered question
 export const mockLeaderboard = [
-    { rank: 1, name: 'Priya Kumar', avatar: '🥇', correct: 3, totalQ: 3, avgTime: 2.1, points: 285, streak: 5 },
-    { rank: 2, name: 'Alex Morgan', avatar: '🥈', correct: 3, totalQ: 3, avgTime: 4.3, points: 261, streak: 3 },
-    { rank: 3, name: 'Jordan Lee', avatar: '🥉', correct: 3, totalQ: 3, avgTime: 6.8, points: 237, streak: 7 },
-    { rank: 4, name: 'Sam Wilson', avatar: '👤', correct: 2, totalQ: 3, avgTime: 3.2, points: 178, streak: 1 },
-    { rank: 5, name: 'Taylor Davis', avatar: '👤', correct: 2, totalQ: 3, avgTime: 5.5, points: 155, streak: 2 },
-    { rank: 6, name: 'Mike Chen', avatar: '👤', correct: 2, totalQ: 3, avgTime: 7.1, points: 142, streak: 0 },
-    { rank: 7, name: 'Emma Garcia', avatar: '👤', correct: 1, totalQ: 3, avgTime: 3.0, points: 91, streak: 0 },
-    { rank: 8, name: 'Chris Park', avatar: '👤', correct: 1, totalQ: 3, avgTime: 8.2, points: 62, streak: 1 },
-    { rank: 9, name: 'Nina Patel', avatar: '👤', correct: 1, totalQ: 3, avgTime: 9.5, points: 44, streak: 0 },
-    { rank: 10, name: 'You', avatar: '⭐', correct: 0, totalQ: 3, avgTime: 0, points: 0, streak: 0, isUser: true },
+    { rank: 1, name: 'Priya Kumar', avatar: '🥇', correct: 5, totalQ: 5, avgTime: 2.1, points: 475, streak: 5 },
+    { rank: 2, name: 'Alex Morgan', avatar: '🥈', correct: 5, totalQ: 5, avgTime: 4.3, points: 435, streak: 3 },
+    { rank: 3, name: 'Jordan Lee', avatar: '🥉', correct: 5, totalQ: 5, avgTime: 6.8, points: 395, streak: 7 },
+    { rank: 4, name: 'Sam Wilson', avatar: '👤', correct: 4, totalQ: 5, avgTime: 3.2, points: 356, streak: 1 },
+    { rank: 5, name: 'Taylor Davis', avatar: '👤', correct: 4, totalQ: 5, avgTime: 5.5, points: 310, streak: 2 },
+    { rank: 6, name: 'Mike Chen', avatar: '👤', correct: 3, totalQ: 5, avgTime: 7.1, points: 213, streak: 0 },
+    { rank: 7, name: 'Emma Garcia', avatar: '👤', correct: 3, totalQ: 5, avgTime: 3.0, points: 273, streak: 0 },
+    { rank: 8, name: 'Chris Park', avatar: '👤', correct: 2, totalQ: 5, avgTime: 8.2, points: 124, streak: 1 },
+    { rank: 9, name: 'Nina Patel', avatar: '👤', correct: 1, totalQ: 5, avgTime: 9.5, points: 44, streak: 0 },
+    { rank: 10, name: 'You', avatar: '⭐', correct: 0, totalQ: 5, avgTime: 0, points: 0, streak: 0, isUser: true },
 ];
 
 export const languages = ['English', 'Hindi', 'Spanish', 'French', 'Tamil', 'Telugu', 'Japanese', 'Korean', 'Mandarin', 'German'];

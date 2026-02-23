@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiSkipBack, FiSkipForward, FiPlay, FiPause, FiVolume2, FiRepeat, FiShuffle, FiHeart, FiDownload, FiMoon, FiShare2, FiClock, FiFileText, FiStar, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiArrowLeft, FiSkipBack, FiSkipForward, FiPlay, FiPause, FiVolume2, FiRepeat, FiShuffle, FiHeart, FiDownload, FiMoon, FiShare2, FiClock, FiFileText, FiStar, FiChevronDown, FiChevronUp, FiX, FiAward, FiZap } from 'react-icons/fi';
+import { mockEpisodeQuizzes, mockPollFlags } from '../data/mockData';
 
 export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
     const navigate = useNavigate();
-    const [progress, setProgress] = useState(35);
+    const [progress, setProgress] = useState(0);
     const [speed, setSpeed] = useState(1);
     const [showSleep, setShowSleep] = useState(false);
     const [sleepTimer, setSleepTimer] = useState(null);
@@ -15,13 +16,155 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
     const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
     const sleepOptions = [5, 10, 15, 30, 45, 60];
     const pod = currentPodcast || { title: 'Select a Podcast', creator: 'No podcast playing', emoji: '🎧', duration: '00:00' };
-    const currentTime = Math.floor((progress / 100) * 2535);
     const totalTime = 2535;
+    const currentTime = Math.floor((progress / 100) * totalTime);
     const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
+    // Quiz state
+    const [showQuiz, setShowQuiz] = useState(false);
+    const [quizIdx, setQuizIdx] = useState(0);
+    const [quizAnswers, setQuizAnswers] = useState([]);
+    const [quizStartTime, setQuizStartTime] = useState(null);
+    const [quizDone, setQuizDone] = useState(false);
+    const [quizScore, setQuizScore] = useState(0);
+    const [quizTriggered, setQuizTriggered] = useState(false);
+    const questions = mockEpisodeQuizzes[1] || [];
+
+    // Poll state
+    const pollFlags = mockPollFlags[1] || [];
+    const [activePoll, setActivePoll] = useState(null);
+    const [pollCountdown, setPollCountdown] = useState(30);
+    const [pollVoted, setPollVoted] = useState(false);
+    const [pollResults, setPollResults] = useState(null);
+    const [pollToast, setPollToast] = useState(null);
+    const triggeredPolls = useRef(new Set());
+    const triggeredToasts = useRef(new Set());
+    const pollTimerRef = useRef(null);
+    const audioRef = useRef(null);
+
+    // Pop sound (using Web Audio API for a notification beep)
+    const playPopSound = useCallback(() => {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 880;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+            // Second beep
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.frequency.value = 1200;
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+            osc2.start(ctx.currentTime + 0.15);
+            osc2.stop(ctx.currentTime + 0.45);
+        } catch (e) { /* silent fail */ }
+    }, []);
+
+    // Check poll flags as progress changes
+    useEffect(() => {
+        if (!isPlaying) return;
+        pollFlags.forEach(flag => {
+            // Toast 10 seconds before poll (~0.4% of timeline for 2535s)
+            const toastPct = flag.percentage - 0.4;
+            if (progress >= toastPct && progress < flag.percentage && !triggeredToasts.current.has(flag.id)) {
+                triggeredToasts.current.add(flag.id);
+                playPopSound();
+                setPollToast('📊 Poll incoming in 10 seconds!');
+                setTimeout(() => setPollToast(null), 4000);
+            }
+            // Show poll at flag position
+            if (progress >= flag.percentage && !triggeredPolls.current.has(flag.id) && !activePoll) {
+                triggeredPolls.current.add(flag.id);
+                setActivePoll(flag);
+                setPollCountdown(30);
+                setPollVoted(false);
+                setPollResults(null);
+            }
+        });
+    }, [progress, isPlaying, pollFlags, activePoll, playPopSound]);
+
+    // Poll countdown timer
+    useEffect(() => {
+        if (!activePoll || pollVoted) return;
+        pollTimerRef.current = setInterval(() => {
+            setPollCountdown(c => {
+                if (c <= 1) {
+                    clearInterval(pollTimerRef.current);
+                    showPollResults(activePoll);
+                    return 0;
+                }
+                return c - 1;
+            });
+        }, 1000);
+        return () => clearInterval(pollTimerRef.current);
+    }, [activePoll, pollVoted]);
+
+    const showPollResults = (poll) => {
+        setPollResults(poll);
+        setPollVoted(true);
+        clearInterval(pollTimerRef.current);
+    };
+
+    const handlePollVote = (optIdx) => {
+        if (pollVoted) return;
+        const updated = { ...activePoll, options: activePoll.options.map((o, i) => i === optIdx ? { ...o, votes: o.votes + 1 } : o), votedIdx: optIdx };
+        showPollResults(updated);
+    };
+
+    const closePoll = () => {
+        setActivePoll(null);
+        setPollResults(null);
+        setPollVoted(false);
+    };
+
+    // End of episode quiz trigger
+    useEffect(() => {
+        if (progress >= 99.5 && !quizTriggered && questions.length > 0) {
+            setQuizTriggered(true);
+            setTimeout(() => {
+                setShowQuiz(true);
+                setQuizIdx(0);
+                setQuizAnswers([]);
+                setQuizDone(false);
+                setQuizScore(0);
+                setQuizStartTime(Date.now());
+            }, 500);
+        }
+    }, [progress, quizTriggered, questions.length]);
+
+    const handleQuizAnswer = (optIdx) => {
+        const q = questions[quizIdx];
+        const timeTaken = (Date.now() - quizStartTime) / 1000;
+        const isCorrect = optIdx === q.correct;
+        const pts = isCorrect ? Math.max(10, Math.round(100 - timeTaken * 9)) : 0;
+        const answer = { questionIdx: quizIdx, selected: optIdx, correct: isCorrect, points: pts, time: timeTaken };
+        const newAnswers = [...quizAnswers, answer];
+        setQuizAnswers(newAnswers);
+
+        if (quizIdx < questions.length - 1) {
+            setTimeout(() => {
+                setQuizIdx(quizIdx + 1);
+                setQuizStartTime(Date.now());
+            }, 600);
+        } else {
+            const totalPts = newAnswers.reduce((sum, a) => sum + a.points, 0);
+            setQuizScore(totalPts);
+            setTimeout(() => setQuizDone(true), 600);
+        }
+    };
+
     const handleLikeMoment = () => {
-        const moment = formatTime(currentTime);
-        setLikeMoments(m => [...m, moment]);
+        setLikeMoments(m => [...m, formatTime(currentTime)]);
     };
 
     const captions = [
@@ -31,8 +174,7 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         { time: '0:45', text: 'The implications for society are profound and far-reaching.' },
         { time: '1:00', text: 'We\'ll explore both the opportunities and challenges ahead.' },
     ];
-
-    const summary = "This episode explores cutting-edge developments in AI and machine learning, discussing how these technologies are reshaping industries from healthcare to finance. Key topics include transformer architectures, ethical considerations in AI deployment, and predictions for the next decade of innovation.";
+    const summary = "This episode explores cutting-edge developments in AI and machine learning, discussing how these technologies are reshaping industries from healthcare to finance.";
 
     return (
         <>
@@ -53,6 +195,8 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .progress-thumb { position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:14px; height:14px; border-radius:50%; background:white; box-shadow:0 2px 6px rgba(0,0,0,0.3); }
         .like-markers { position:absolute; top:0; left:0; right:0; bottom:0; }
         .like-marker { position:absolute; top:-4px; width:3px; height:14px; background:var(--danger); border-radius:2px; transform:translateX(-50%); }
+        .poll-markers { position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none; }
+        .poll-marker { position:absolute; top:-6px; font-size:0.6rem; transform:translateX(-50%); }
         .progress-times { display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:6px; }
         .main-controls { display:flex; align-items:center; justify-content:center; gap:20px; margin:24px 0; }
         .ctrl-btn { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:transparent; color:var(--text-primary); border:none; transition:var(--transition); font-size:0.75rem; position:relative; }
@@ -82,6 +226,62 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .moments-list { margin-bottom:16px; }
         .moments-list h4 { font-size:0.85rem; margin-bottom:8px; }
         .moment-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; margin:0 6px 6px 0; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:16px; font-size:0.75rem; color:#f87171; }
+
+        /* Poll Toast */
+        .poll-toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(251,191,36,0.95); color:#000; padding:12px 24px; border-radius:var(--radius-md); font-weight:700; font-size:0.85rem; z-index:1000; animation:slideDown 0.4s ease-out; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+        @keyframes slideDown { from { transform:translateX(-50%) translateY(-40px); opacity:0; } to { transform:translateX(-50%) translateY(0); opacity:1; } }
+
+        /* Poll Popup Modal */
+        .poll-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:999; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.3s ease-out; }
+        .poll-modal { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; width:90%; max-width:440px; animation:slideUp 0.4s ease-out; position:relative; }
+        .poll-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .poll-modal-header h3 { font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px; }
+        .poll-countdown { display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:0.8rem; font-weight:700; }
+        .poll-countdown.warning { background:rgba(248,113,113,0.15); color:#f87171; }
+        .poll-countdown.normal { background:rgba(251,191,36,0.15); color:var(--warning); }
+        .poll-question { font-size:0.95rem; font-weight:600; margin-bottom:16px; line-height:1.5; }
+        .poll-option-btn { width:100%; padding:14px 18px; margin-bottom:8px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-md); color:var(--text-primary); font-size:0.88rem; text-align:left; transition:all 0.3s ease; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
+        .poll-option-btn:hover { border-color:var(--primary); background:rgba(92,114,133,0.1); }
+        .poll-option-btn.voted { border-color:var(--accent); }
+
+        /* Poll Results */
+        .poll-result-bar { width:100%; padding:12px 18px; margin-bottom:8px; border-radius:var(--radius-md); position:relative; overflow:hidden; border:1px solid var(--border); }
+        .poll-result-fill { position:absolute; inset:0; border-radius:var(--radius-md); transition:width 0.8s ease; }
+        .poll-result-fill.user-vote { background:rgba(167,180,158,0.3); }
+        .poll-result-fill.other { background:rgba(92,114,133,0.15); }
+        .poll-result-content { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; }
+        .poll-result-pct { font-weight:700; color:var(--accent); }
+        .poll-result-note { text-align:center; margin-top:12px; font-size:0.75rem; color:var(--text-muted); }
+
+        /* Episode Quiz Modal */
+        .quiz-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:1000; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.3s ease-out; }
+        .quiz-modal { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-xl); padding:32px; width:92%; max-width:480px; animation:slideUp 0.4s ease-out; position:relative; }
+        .quiz-modal-close { position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; background:var(--bg-input); color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
+        .quiz-modal h2 { font-size:1.2rem; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
+        .quiz-progress { display:flex; gap:4px; margin:12px 0 20px; }
+        .quiz-dot { flex:1; height:4px; border-radius:2px; background:var(--bg-input); transition:background 0.3s; }
+        .quiz-dot.done { background:var(--success); }
+        .quiz-dot.wrong { background:var(--danger); }
+        .quiz-dot.current { background:var(--accent); }
+        .quiz-q-text { font-size:0.95rem; font-weight:600; margin-bottom:20px; line-height:1.5; }
+        .quiz-q-num { font-size:0.72rem; color:var(--text-muted); margin-bottom:6px; }
+        .quiz-opt { width:100%; padding:14px 18px; margin-bottom:8px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-md); color:var(--text-primary); font-size:0.88rem; text-align:left; transition:all 0.3s ease; cursor:pointer; }
+        .quiz-opt:hover { border-color:var(--primary); transform:translateX(4px); }
+        .quiz-opt.selected-correct { border-color:var(--success); background:rgba(74,222,128,0.15); color:var(--success); }
+        .quiz-opt.selected-wrong { border-color:var(--danger); background:rgba(248,113,113,0.15); color:var(--danger); }
+
+        /* Quiz Results */
+        .quiz-results { text-align:center; }
+        .quiz-results .trophy { font-size:3rem; margin-bottom:12px; }
+        .quiz-results h2 { font-size:1.3rem; font-weight:800; margin-bottom:4px; }
+        .quiz-results .total-pts { font-size:2rem; font-weight:900; color:var(--accent); margin:12px 0; }
+        .quiz-results .breakdown { display:flex; justify-content:center; gap:24px; margin:16px 0; }
+        .quiz-results .breakdown div { text-align:center; }
+        .quiz-results .breakdown .num { font-size:1.2rem; font-weight:800; }
+        .quiz-results .breakdown .label { font-size:0.7rem; color:var(--text-muted); }
+        .quiz-close-btn { padding:12px 32px; background:var(--gradient-primary); color:white; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; margin-top:16px; transition:var(--transition); }
+        .quiz-close-btn:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+        .quiz-no-pts-note { font-size:0.72rem; color:var(--text-muted); margin-top:8px; font-style:italic; }
       `}</style>
             <div className="player-page">
                 <div className="player-top">
@@ -101,6 +301,7 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
                             <div className="progress-thumb" />
                         </div>
                         <div className="like-markers">{likeMoments.map((m, i) => { const [min, sec] = m.split(':').map(Number); const pct = ((min * 60 + sec) / totalTime) * 100; return <div key={i} className="like-marker" style={{ left: `${pct}%` }} />; })}</div>
+                        <div className="poll-markers">{pollFlags.map(f => <span key={f.id} className="poll-marker" style={{ left: `${f.percentage}%` }}>🚩</span>)}</div>
                     </div>
                     <div className="progress-times"><span>{formatTime(currentTime)}</span><span>{formatTime(totalTime)}</span></div>
                 </div>
@@ -126,6 +327,101 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
                 {showSummary && <div className="summary-box fade-in"><h4>AI Summary <span className="premium-badge">PREMIUM</span></h4><p>{summary}</p></div>}
                 {likeMoments.length > 0 && <div className="moments-list fade-in"><h4>❤️ Liked Moments</h4>{likeMoments.map((m, i) => <span key={i} className="moment-chip">⏱ {m}</span>)}</div>}
             </div>
+
+            {/* Poll Toast Notification */}
+            {pollToast && <div className="poll-toast">{pollToast}</div>}
+
+            {/* Poll Popup Modal */}
+            {activePoll && !pollResults && (
+                <div className="poll-overlay">
+                    <div className="poll-modal">
+                        <div className="poll-modal-header">
+                            <h3>📊 Live Poll</h3>
+                            <span className={`poll-countdown ${pollCountdown <= 10 ? 'warning' : 'normal'}`}><FiClock size={14} /> {pollCountdown}s</span>
+                        </div>
+                        <p className="poll-question">{activePoll.question}</p>
+                        {activePoll.options.map((opt, i) => (
+                            <button key={i} className="poll-option-btn" onClick={() => handlePollVote(i)}>{opt.text}</button>
+                        ))}
+                        <p className="quiz-no-pts-note">Polls don't award points — they're just for fun!</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Poll Results (Global) */}
+            {pollResults && (
+                <div className="poll-overlay" onClick={closePoll}>
+                    <div className="poll-modal" onClick={e => e.stopPropagation()}>
+                        <div className="poll-modal-header">
+                            <h3>📊 Poll Results</h3>
+                            <button className="quiz-modal-close" onClick={closePoll}><FiX size={16} /></button>
+                        </div>
+                        <p className="poll-question">{pollResults.question}</p>
+                        {(() => {
+                            const totalVotes = pollResults.options.reduce((s, o) => s + o.votes, 0);
+                            return pollResults.options.map((opt, i) => {
+                                const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
+                                return (
+                                    <div key={i} className="poll-result-bar">
+                                        <div className={`poll-result-fill ${pollResults.votedIdx === i ? 'user-vote' : 'other'}`} style={{ width: `${pct}%` }} />
+                                        <div className="poll-result-content">
+                                            <span>{opt.text} {pollResults.votedIdx === i && '✓'}</span>
+                                            <span className="poll-result-pct">{pct}%</span>
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })()}
+                        <p className="poll-result-note">{pollResults.options.reduce((s, o) => s + o.votes, 0).toLocaleString()} total votes • Results shown globally</p>
+                    </div>
+                </div>
+            )}
+
+            {/* End-of-Episode Quiz Modal */}
+            {showQuiz && !quizDone && questions.length > 0 && (
+                <div className="quiz-overlay">
+                    <div className="quiz-modal">
+                        <button className="quiz-modal-close" onClick={() => setShowQuiz(false)}><FiX size={16} /></button>
+                        <h2><FiAward size={20} /> Episode Quiz</h2>
+                        <div className="quiz-progress">
+                            {questions.map((_, i) => (
+                                <div key={i} className={`quiz-dot ${i < quizIdx ? (quizAnswers[i]?.correct ? 'done' : 'wrong') : i === quizIdx ? 'current' : ''}`} />
+                            ))}
+                        </div>
+                        <p className="quiz-q-num">Question {quizIdx + 1} of {questions.length}</p>
+                        <p className="quiz-q-text">{questions[quizIdx].question}</p>
+                        {questions[quizIdx].options.map((opt, i) => {
+                            const answered = quizAnswers.length > quizIdx;
+                            const isSelected = answered && quizAnswers[quizIdx]?.selected === i;
+                            let cls = 'quiz-opt';
+                            if (isSelected && quizAnswers[quizIdx]?.correct) cls += ' selected-correct';
+                            if (isSelected && !quizAnswers[quizIdx]?.correct) cls += ' selected-wrong';
+                            return <button key={i} className={cls} onClick={() => !answered && handleQuizAnswer(i)} disabled={answered}>{opt}</button>;
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Quiz Results */}
+            {showQuiz && quizDone && (
+                <div className="quiz-overlay">
+                    <div className="quiz-modal">
+                        <div className="quiz-results fade-in">
+                            <div className="trophy">{quizScore >= 400 ? '🏆' : quizScore >= 200 ? '🎉' : '👏'}</div>
+                            <h2>Quiz Complete!</h2>
+                            <div className="total-pts">{quizScore} pts</div>
+                            <div className="breakdown">
+                                <div><div className="num" style={{ color: 'var(--success)' }}>{quizAnswers.filter(a => a.correct).length}</div><div className="label">Correct</div></div>
+                                <div><div className="num" style={{ color: 'var(--danger)' }}>{quizAnswers.filter(a => !a.correct).length}</div><div className="label">Wrong</div></div>
+                                <div><div className="num">{questions.length}</div><div className="label">Total</div></div>
+                                <div><div className="num" style={{ color: 'var(--accent)' }}><FiZap size={16} /></div><div className="label">Speed Bonus</div></div>
+                            </div>
+                            <p className="quiz-no-pts-note">Points added to leaderboard! Faster answers = more points.</p>
+                            <button className="quiz-close-btn" onClick={() => setShowQuiz(false)}>Done</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
