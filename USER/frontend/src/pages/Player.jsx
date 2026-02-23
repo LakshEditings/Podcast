@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiSkipBack, FiSkipForward, FiPlay, FiPause, FiVolume2, FiRepeat, FiShuffle, FiHeart, FiDownload, FiMoon, FiShare2, FiClock, FiFileText, FiStar, FiChevronDown, FiChevronUp, FiX, FiAward, FiZap } from 'react-icons/fi';
-import { mockEpisodeQuizzes, mockPollFlags } from '../data/mockData';
+
+const API = 'http://localhost:5001/api';
 
 export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
     const navigate = useNavigate();
+    const audioRef = useRef(null);
     const [progress, setProgress] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
     const [speed, setSpeed] = useState(1);
     const [showSleep, setShowSleep] = useState(false);
     const [sleepTimer, setSleepTimer] = useState(null);
@@ -15,10 +19,7 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
     const [likeMoments, setLikeMoments] = useState([]);
     const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
     const sleepOptions = [5, 10, 15, 30, 45, 60];
-    const pod = currentPodcast || { title: 'Select a Podcast', creator: 'No podcast playing', emoji: '🎧', duration: '00:00' };
-    const totalTime = 2535;
-    const currentTime = Math.floor((progress / 100) * totalTime);
-    const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    const pod = currentPodcast || { title: 'Select a Podcast', creator: 'No podcast playing', emoji: '🎧' };
 
     // Quiz state
     const [showQuiz, setShowQuiz] = useState(false);
@@ -28,10 +29,10 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
     const [quizDone, setQuizDone] = useState(false);
     const [quizScore, setQuizScore] = useState(0);
     const [quizTriggered, setQuizTriggered] = useState(false);
-    const questions = mockEpisodeQuizzes[1] || [];
+    const [questions, setQuestions] = useState([]);
 
     // Poll state
-    const pollFlags = mockPollFlags[1] || [];
+    const [pollFlags, setPollFlags] = useState([]);
     const [activePoll, setActivePoll] = useState(null);
     const [pollCountdown, setPollCountdown] = useState(30);
     const [pollVoted, setPollVoted] = useState(false);
@@ -40,41 +41,80 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
     const triggeredPolls = useRef(new Set());
     const triggeredToasts = useRef(new Set());
     const pollTimerRef = useRef(null);
-    const audioRef = useRef(null);
 
-    // Pop sound (using Web Audio API for a notification beep)
+    const formatTime = (s) => {
+        const m = Math.floor(s / 60);
+        const sec = Math.floor(s % 60);
+        return `${m}:${String(sec).padStart(2, '0')}`;
+    };
+
+    // Fetch quiz and poll data for the episode
+    useEffect(() => {
+        if (!currentPodcast?.episodeId) return;
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        // Fetch quiz
+        fetch(`${API}/quizPolls/quiz/${currentPodcast.episodeId}`, { headers })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { if (data?.questions) setQuestions(data.questions); })
+            .catch(() => { });
+        // Fetch polls
+        fetch(`${API}/quizPolls/polls/${currentPodcast.episodeId}`, { headers })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { if (data?.flags) setPollFlags(data.flags.map((f, i) => ({ ...f, id: i }))); })
+            .catch(() => { });
+    }, [currentPodcast?.episodeId]);
+
+    // Audio playback control
+    useEffect(() => {
+        if (!audioRef.current) return;
+        audioRef.current.playbackRate = speed;
+    }, [speed]);
+
+    useEffect(() => {
+        if (!audioRef.current || !currentPodcast?.audioUrl) return;
+        if (isPlaying) audioRef.current.play().catch(() => { });
+        else audioRef.current.pause();
+    }, [isPlaying, currentPodcast?.audioUrl]);
+
+    // Audio time update
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        const onTimeUpdate = () => {
+            setCurrentTime(audio.currentTime);
+            if (audio.duration) setProgress((audio.currentTime / audio.duration) * 100);
+        };
+        const onLoadedMetadata = () => { setDuration(audio.duration || 0); };
+        const onEnded = () => { setProgress(100); };
+        audio.addEventListener('timeupdate', onTimeUpdate);
+        audio.addEventListener('loadedmetadata', onLoadedMetadata);
+        audio.addEventListener('ended', onEnded);
+        return () => {
+            audio.removeEventListener('timeupdate', onTimeUpdate);
+            audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+            audio.removeEventListener('ended', onEnded);
+        };
+    }, [currentPodcast?.audioUrl]);
+
+    // Pop sound
     const playPopSound = useCallback(() => {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = 880;
-            osc.type = 'sine';
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 880; osc.type = 'sine';
             gain.gain.setValueAtTime(0.3, ctx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.3);
-            // Second beep
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.frequency.value = 1200;
-            osc2.type = 'sine';
-            gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.15);
-            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
-            osc2.start(ctx.currentTime + 0.15);
-            osc2.stop(ctx.currentTime + 0.45);
-        } catch (e) { /* silent fail */ }
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
+        } catch (e) { }
     }, []);
 
-    // Check poll flags as progress changes
+    // Check poll flags
     useEffect(() => {
-        if (!isPlaying) return;
+        if (!isPlaying || !pollFlags.length) return;
         pollFlags.forEach(flag => {
-            // Toast 10 seconds before poll (~0.4% of timeline for 2535s)
             const toastPct = flag.percentage - 0.4;
             if (progress >= toastPct && progress < flag.percentage && !triggeredToasts.current.has(flag.id)) {
                 triggeredToasts.current.add(flag.id);
@@ -82,7 +122,6 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
                 setPollToast('📊 Poll incoming in 10 seconds!');
                 setTimeout(() => setPollToast(null), 4000);
             }
-            // Show poll at flag position
             if (progress >= flag.percentage && !triggeredPolls.current.has(flag.id) && !activePoll) {
                 triggeredPolls.current.add(flag.id);
                 setActivePoll(flag);
@@ -93,52 +132,31 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         });
     }, [progress, isPlaying, pollFlags, activePoll, playPopSound]);
 
-    // Poll countdown timer
+    // Poll countdown
     useEffect(() => {
         if (!activePoll || pollVoted) return;
         pollTimerRef.current = setInterval(() => {
             setPollCountdown(c => {
-                if (c <= 1) {
-                    clearInterval(pollTimerRef.current);
-                    showPollResults(activePoll);
-                    return 0;
-                }
+                if (c <= 1) { clearInterval(pollTimerRef.current); showPollResultsFn(activePoll); return 0; }
                 return c - 1;
             });
         }, 1000);
         return () => clearInterval(pollTimerRef.current);
     }, [activePoll, pollVoted]);
 
-    const showPollResults = (poll) => {
-        setPollResults(poll);
-        setPollVoted(true);
-        clearInterval(pollTimerRef.current);
-    };
-
+    const showPollResultsFn = (poll) => { setPollResults(poll); setPollVoted(true); clearInterval(pollTimerRef.current); };
     const handlePollVote = (optIdx) => {
         if (pollVoted) return;
         const updated = { ...activePoll, options: activePoll.options.map((o, i) => i === optIdx ? { ...o, votes: o.votes + 1 } : o), votedIdx: optIdx };
-        showPollResults(updated);
+        showPollResultsFn(updated);
     };
-
-    const closePoll = () => {
-        setActivePoll(null);
-        setPollResults(null);
-        setPollVoted(false);
-    };
+    const closePoll = () => { setActivePoll(null); setPollResults(null); setPollVoted(false); };
 
     // End of episode quiz trigger
     useEffect(() => {
         if (progress >= 99.5 && !quizTriggered && questions.length > 0) {
             setQuizTriggered(true);
-            setTimeout(() => {
-                setShowQuiz(true);
-                setQuizIdx(0);
-                setQuizAnswers([]);
-                setQuizDone(false);
-                setQuizScore(0);
-                setQuizStartTime(Date.now());
-            }, 500);
+            setTimeout(() => { setShowQuiz(true); setQuizIdx(0); setQuizAnswers([]); setQuizDone(false); setQuizScore(0); setQuizStartTime(Date.now()); }, 500);
         }
     }, [progress, quizTriggered, questions.length]);
 
@@ -150,12 +168,8 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         const answer = { questionIdx: quizIdx, selected: optIdx, correct: isCorrect, points: pts, time: timeTaken };
         const newAnswers = [...quizAnswers, answer];
         setQuizAnswers(newAnswers);
-
         if (quizIdx < questions.length - 1) {
-            setTimeout(() => {
-                setQuizIdx(quizIdx + 1);
-                setQuizStartTime(Date.now());
-            }, 600);
+            setTimeout(() => { setQuizIdx(quizIdx + 1); setQuizStartTime(Date.now()); }, 600);
         } else {
             const totalPts = newAnswers.reduce((sum, a) => sum + a.points, 0);
             setQuizScore(totalPts);
@@ -163,18 +177,22 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         }
     };
 
-    const handleLikeMoment = () => {
-        setLikeMoments(m => [...m, formatTime(currentTime)]);
+    const handleLikeMoment = () => setLikeMoments(m => [...m, formatTime(currentTime)]);
+
+    const seekTo = (pct) => {
+        if (audioRef.current && duration) {
+            audioRef.current.currentTime = (pct / 100) * duration;
+        }
+        setProgress(pct);
     };
 
-    const captions = [
-        { time: '0:00', text: 'Welcome to today\'s episode where we dive deep into the world of technology.' },
-        { time: '0:15', text: 'Let\'s start by discussing the latest developments in artificial intelligence.' },
-        { time: '0:30', text: 'Machine learning models have become increasingly sophisticated.' },
-        { time: '0:45', text: 'The implications for society are profound and far-reaching.' },
-        { time: '1:00', text: 'We\'ll explore both the opportunities and challenges ahead.' },
-    ];
-    const summary = "This episode explores cutting-edge developments in AI and machine learning, discussing how these technologies are reshaping industries from healthcare to finance.";
+    const seekRelative = (seconds) => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = Math.max(0, Math.min(duration, audioRef.current.currentTime + seconds));
+        }
+    };
+
+    const noAudio = !currentPodcast?.audioUrl;
 
     return (
         <>
@@ -189,6 +207,7 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .player-info h1 { font-size:1.4rem; font-weight:800; margin-bottom:4px; }
         .player-info p { font-size:0.85rem; color:var(--text-muted); }
         .player-info .ep-title { font-size:0.78rem; color:var(--accent); margin-top:4px; }
+        .no-audio-msg { text-align:center; padding:8px 16px; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.2); border-radius:var(--radius-md); color:var(--danger); font-size:0.8rem; margin-bottom:16px; }
         .progress-bar { margin-bottom:8px; }
         .progress-track { width:100%; height:6px; background:var(--bg-card); border-radius:3px; cursor:pointer; position:relative; }
         .progress-fill { height:100%; background:var(--gradient-primary); border-radius:3px; transition:width 0.1s; position:relative; }
@@ -226,12 +245,8 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .moments-list { margin-bottom:16px; }
         .moments-list h4 { font-size:0.85rem; margin-bottom:8px; }
         .moment-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; margin:0 6px 6px 0; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:16px; font-size:0.75rem; color:#f87171; }
-
-        /* Poll Toast */
         .poll-toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(251,191,36,0.95); color:#000; padding:12px 24px; border-radius:var(--radius-md); font-weight:700; font-size:0.85rem; z-index:1000; animation:slideDown 0.4s ease-out; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
         @keyframes slideDown { from { transform:translateX(-50%) translateY(-40px); opacity:0; } to { transform:translateX(-50%) translateY(0); opacity:1; } }
-
-        /* Poll Popup Modal */
         .poll-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:999; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.3s ease-out; }
         .poll-modal { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; width:90%; max-width:440px; animation:slideUp 0.4s ease-out; position:relative; }
         .poll-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
@@ -242,9 +257,6 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .poll-question { font-size:0.95rem; font-weight:600; margin-bottom:16px; line-height:1.5; }
         .poll-option-btn { width:100%; padding:14px 18px; margin-bottom:8px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-md); color:var(--text-primary); font-size:0.88rem; text-align:left; transition:all 0.3s ease; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
         .poll-option-btn:hover { border-color:var(--primary); background:rgba(92,114,133,0.1); }
-        .poll-option-btn.voted { border-color:var(--accent); }
-
-        /* Poll Results */
         .poll-result-bar { width:100%; padding:12px 18px; margin-bottom:8px; border-radius:var(--radius-md); position:relative; overflow:hidden; border:1px solid var(--border); }
         .poll-result-fill { position:absolute; inset:0; border-radius:var(--radius-md); transition:width 0.8s ease; }
         .poll-result-fill.user-vote { background:rgba(167,180,158,0.3); }
@@ -252,11 +264,9 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .poll-result-content { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; }
         .poll-result-pct { font-weight:700; color:var(--accent); }
         .poll-result-note { text-align:center; margin-top:12px; font-size:0.75rem; color:var(--text-muted); }
-
-        /* Episode Quiz Modal */
         .quiz-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:1000; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.3s ease-out; }
         .quiz-modal { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-xl); padding:32px; width:92%; max-width:480px; animation:slideUp 0.4s ease-out; position:relative; }
-        .quiz-modal-close { position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; background:var(--bg-input); color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
+        .quiz-modal-close { position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:50%; background:var(--bg-input); color:var(--text-muted); display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; }
         .quiz-modal h2 { font-size:1.2rem; font-weight:800; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
         .quiz-progress { display:flex; gap:4px; margin:12px 0 20px; }
         .quiz-dot { flex:1; height:4px; border-radius:2px; background:var(--bg-input); transition:background 0.3s; }
@@ -269,8 +279,6 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .quiz-opt:hover { border-color:var(--primary); transform:translateX(4px); }
         .quiz-opt.selected-correct { border-color:var(--success); background:rgba(74,222,128,0.15); color:var(--success); }
         .quiz-opt.selected-wrong { border-color:var(--danger); background:rgba(248,113,113,0.15); color:var(--danger); }
-
-        /* Quiz Results */
         .quiz-results { text-align:center; }
         .quiz-results .trophy { font-size:3rem; margin-bottom:12px; }
         .quiz-results h2 { font-size:1.3rem; font-weight:800; margin-bottom:4px; }
@@ -279,37 +287,39 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .quiz-results .breakdown div { text-align:center; }
         .quiz-results .breakdown .num { font-size:1.2rem; font-weight:800; }
         .quiz-results .breakdown .label { font-size:0.7rem; color:var(--text-muted); }
-        .quiz-close-btn { padding:12px 32px; background:var(--gradient-primary); color:white; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; margin-top:16px; transition:var(--transition); }
+        .quiz-close-btn { padding:12px 32px; background:var(--gradient-primary); color:white; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; margin-top:16px; transition:var(--transition); border:none; cursor:pointer; }
         .quiz-close-btn:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
         .quiz-no-pts-note { font-size:0.72rem; color:var(--text-muted); margin-top:8px; font-style:italic; }
       `}</style>
+            {currentPodcast?.audioUrl && <audio ref={audioRef} src={currentPodcast.audioUrl} preload="auto" />}
             <div className="player-page">
                 <div className="player-top">
                     <button className="p-back" onClick={() => navigate(-1)}><FiArrowLeft size={20} /></button>
                     <span className="p-np">Now Playing</span>
                     <div style={{ width: 40 }} />
                 </div>
-                <div className="player-art fade-in" style={{ background: `linear-gradient(135deg, #5C7285, #818C78)` }}>{pod.emoji}</div>
+                <div className="player-art fade-in" style={{ background: `linear-gradient(135deg, #5C7285, #818C78)` }}>{pod.emoji || '🎧'}</div>
                 <div className="player-info fade-in">
-                    <h1>{pod.title}</h1>
-                    <p>{pod.creator}</p>
-                    {pod.episodeTitle && <p className="ep-title">{pod.episodeTitle}</p>}
+                    <h1>{pod.episodeTitle || pod.title}</h1>
+                    <p>{pod.creatorName || pod.creator}</p>
+                    {pod.episodeTitle && <p className="ep-title">{pod.title}</p>}
                 </div>
+                {noAudio && <div className="no-audio-msg">⚠️ No audio file available for this episode</div>}
                 <div className="progress-bar">
-                    <div className="progress-track" onClick={e => { const r = e.currentTarget.getBoundingClientRect(); setProgress(((e.clientX - r.left) / r.width) * 100); }}>
+                    <div className="progress-track" onClick={e => { const r = e.currentTarget.getBoundingClientRect(); seekTo(((e.clientX - r.left) / r.width) * 100); }}>
                         <div className="progress-fill" style={{ width: `${progress}%` }}>
                             <div className="progress-thumb" />
                         </div>
-                        <div className="like-markers">{likeMoments.map((m, i) => { const [min, sec] = m.split(':').map(Number); const pct = ((min * 60 + sec) / totalTime) * 100; return <div key={i} className="like-marker" style={{ left: `${pct}%` }} />; })}</div>
+                        <div className="like-markers">{likeMoments.map((m, i) => { const [min, sec] = m.split(':').map(Number); const pct = duration > 0 ? ((min * 60 + sec) / duration) * 100 : 0; return <div key={i} className="like-marker" style={{ left: `${pct}%` }} />; })}</div>
                         <div className="poll-markers">{pollFlags.map(f => <span key={f.id} className="poll-marker" style={{ left: `${f.percentage}%` }}>🚩</span>)}</div>
                     </div>
-                    <div className="progress-times"><span>{formatTime(currentTime)}</span><span>{formatTime(totalTime)}</span></div>
+                    <div className="progress-times"><span>{formatTime(currentTime)}</span><span>{formatTime(duration)}</span></div>
                 </div>
                 <div className="main-controls">
                     <button className="ctrl-btn" title="Shuffle"><FiShuffle size={20} /></button>
-                    <button className="ctrl-btn" onClick={() => setProgress(Math.max(0, progress - (10 / totalTime) * 100))} title="Rewind 10s"><FiSkipBack size={22} /><span className="seek-label">-10</span></button>
+                    <button className="ctrl-btn" onClick={() => seekRelative(-10)} title="Rewind 10s"><FiSkipBack size={22} /><span className="seek-label">-10</span></button>
                     <button className="ctrl-btn main-play" onClick={onTogglePlay}>{isPlaying ? <FiPause size={28} /> : <FiPlay size={28} />}</button>
-                    <button className="ctrl-btn" onClick={() => setProgress(Math.min(100, progress + (10 / totalTime) * 100))} title="Forward 10s"><FiSkipForward size={22} /><span className="seek-label">+10</span></button>
+                    <button className="ctrl-btn" onClick={() => seekRelative(10)} title="Forward 10s"><FiSkipForward size={22} /><span className="seek-label">+10</span></button>
                     <button className="ctrl-btn" title="Repeat"><FiRepeat size={20} /></button>
                 </div>
                 <div className="speed-control">{speeds.map(s => <button key={s} className={`speed-btn ${speed === s ? 'active' : ''}`} onClick={() => setSpeed(s)}>{s}x</button>)}</div>
@@ -319,19 +329,15 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
                     <button className={`extra-btn ${showSleep ? 'active' : ''}`} onClick={() => setShowSleep(!showSleep)}><FiMoon size={18} /><span>Sleep</span></button>
                     <button className="extra-btn"><FiDownload size={18} /><span>Download</span></button>
                     <button className="extra-btn"><FiShare2 size={18} /><span>Share</span></button>
-                    <button className={`extra-btn ${showCaptions ? 'active' : ''}`} onClick={() => setShowCaptions(!showCaptions)}><FiFileText size={18} /><span>Captions</span></button>
-                    <button className={`extra-btn ${showSummary ? 'active' : ''}`} onClick={() => setShowSummary(!showSummary)}><FiClock size={18} /><span>Summary</span></button>
                 </div>
                 {showSleep && <div className="sleep-dropdown fade-in">{sleepOptions.map(m => <button key={m} className={`sleep-opt ${sleepTimer === m ? 'active' : ''}`} onClick={() => setSleepTimer(m)}>{m} min</button>)}{sleepTimer && <button className="sleep-opt" onClick={() => setSleepTimer(null)} style={{ color: 'var(--danger)' }}>Cancel</button>}</div>}
-                {showCaptions && <div className="caption-box fade-in">{captions.map((c, i) => <div key={i} className="caption-line"><span className="caption-time">{c.time}</span><span className="caption-text">{c.text}</span></div>)}</div>}
-                {showSummary && <div className="summary-box fade-in"><h4>AI Summary <span className="premium-badge">PREMIUM</span></h4><p>{summary}</p></div>}
                 {likeMoments.length > 0 && <div className="moments-list fade-in"><h4>❤️ Liked Moments</h4>{likeMoments.map((m, i) => <span key={i} className="moment-chip">⏱ {m}</span>)}</div>}
             </div>
 
-            {/* Poll Toast Notification */}
+            {/* Poll Toast */}
             {pollToast && <div className="poll-toast">{pollToast}</div>}
 
-            {/* Poll Popup Modal */}
+            {/* Poll Popup */}
             {activePoll && !pollResults && (
                 <div className="poll-overlay">
                     <div className="poll-modal">
@@ -348,7 +354,7 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
                 </div>
             )}
 
-            {/* Poll Results (Global) */}
+            {/* Poll Results */}
             {pollResults && (
                 <div className="poll-overlay" onClick={closePoll}>
                     <div className="poll-modal" onClick={e => e.stopPropagation()}>
@@ -372,12 +378,12 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
                                 );
                             });
                         })()}
-                        <p className="poll-result-note">{pollResults.options.reduce((s, o) => s + o.votes, 0).toLocaleString()} total votes • Results shown globally</p>
+                        <p className="poll-result-note">{pollResults.options.reduce((s, o) => s + o.votes, 0).toLocaleString()} total votes</p>
                     </div>
                 </div>
             )}
 
-            {/* End-of-Episode Quiz Modal */}
+            {/* End-of-Episode Quiz */}
             {showQuiz && !quizDone && questions.length > 0 && (
                 <div className="quiz-overlay">
                     <div className="quiz-modal">
