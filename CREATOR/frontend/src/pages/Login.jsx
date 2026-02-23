@@ -10,14 +10,25 @@ export default function Login() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        if (email === 'creator@test.com' && password === '123456') {
-            setLoading(true);
-            setTimeout(() => { setLoading(false); navigate('/'); }, 1200);
-        } else {
-            setError('Invalid email or password. Try creator@test.com / 123456');
+        setLoading(true);
+        try {
+            const res = await fetch('http://localhost:5002/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Login failed');
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('creator', JSON.stringify(data.user));
+            navigate('/');
+        } catch (err) {
+            setError(err.message || 'Login failed. Try creator@test.com / 123456');
+        } finally {
+            setLoading(false);
         }
     };
 

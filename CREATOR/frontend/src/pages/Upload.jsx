@@ -1,10 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiUpload, FiPlus, FiX, FiCheck, FiFlag, FiChevronDown, FiChevronUp, FiTrash2, FiMusic } from 'react-icons/fi';
 
 const API = 'http://localhost:5002/api';
 const categories = ['Technology', 'Wellness', 'True Crime', 'Business', 'History', 'Comedy', 'Science', 'Music', 'Sports', 'Education'];
 
 export default function Upload() {
+    const navigate = useNavigate();
+    useEffect(() => { if (!localStorage.getItem('token')) navigate('/login'); }, []);
     const [title, setTitle] = useState('');
     const [desc, setDesc] = useState('');
     const [category, setCategory] = useState('');
@@ -96,7 +99,8 @@ export default function Upload() {
             formData.append('description', desc);
             formData.append('category', category);
             formData.append('language', 'English');
-            formData.append('creatorName', 'Creator');
+            const creator = JSON.parse(localStorage.getItem('creator') || '{}');
+            formData.append('creatorName', creator.name || 'Creator');
 
             // Add episode data as JSON (without audioFile objects)
             const episodeData = episodes.map(ep => ({
