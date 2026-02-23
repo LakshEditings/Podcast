@@ -97,6 +97,76 @@ router.post('/', auth, upload.any(), async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// Edit podcast (within 24 hours only)
+router.put('/:id', auth, upload.any(), async (req, res) => {
+    try {
+        const podcast = await Podcast.findOne({ _id: req.params.id, creator: req.user.id });
+        if (!podcast) return res.status(404).json({ message: 'Not found' });
+
+        // Check 24-hour edit window
+        const hoursSinceCreation = (Date.now() - new Date(podcast.createdAt).getTime()) / (1000 * 60 * 60);
+        if (hoursSinceCreation > 24) {
+            return res.status(403).json({ message: 'Edit window expired. You can only edit within 24 hours of upload.' });
+        }
+
+        const { title, description, category, language } = req.body;
+        const podcastEdits = [];
+        const now = new Date();
+
+        // Track podcast-level changes
+        if (title && title !== podcast.title) { podcastEdits.push({ field: 'Title', oldValue: podcast.title, newValue: title, editedAt: now }); podcast.title = title; }
+        if (description && description !== podcast.description) { podcastEdits.push({ field: 'Description', oldValue: podcast.description, newValue: description, editedAt: now }); podcast.description = description; }
+        if (category && category !== podcast.category) { podcastEdits.push({ field: 'Category', oldValue: podcast.category, newValue: category, editedAt: now }); podcast.category = category; }
+        if (language && language !== podcast.language) { podcastEdits.push({ field: 'Language', oldValue: podcast.language, newValue: language, editedAt: now }); podcast.language = language; }
+
+        if (podcastEdits.length > 0) {
+            podcast.editHistory = [...(podcast.editHistory || []), ...podcastEdits];
+            await podcast.save();
+        }
+
+        // Handle episode updates
+        const episodesData = req.body.episodes ? JSON.parse(req.body.episodes) : null;
+        const updatedEpisodes = [];
+
+        if (episodesData) {
+            const existingEpisodes = await Episode.find({ podcast: podcast._id }).sort({ createdAt: 1 });
+
+            for (let i = 0; i < episodesData.length; i++) {
+                const epData = episodesData[i];
+                const existingEp = existingEpisodes[i];
+
+                if (existingEp) {
+                    const epEdits = [];
+                    if (epData.title && epData.title !== existingEp.title) { epEdits.push({ field: 'Title', oldValue: existingEp.title, newValue: epData.title, editedAt: now }); existingEp.title = epData.title; }
+                    if (epData.description !== undefined && epData.description !== existingEp.description) { epEdits.push({ field: 'Description', oldValue: existingEp.description, newValue: epData.description, editedAt: now }); existingEp.description = epData.description; }
+                    if (epData.duration && epData.duration !== existingEp.duration) { epEdits.push({ field: 'Duration', oldValue: existingEp.duration, newValue: epData.duration, editedAt: now }); existingEp.duration = epData.duration; }
+
+                    // Handle audio file replacement
+                    const audioFile = req.files?.find(f => f.fieldname === `audioFile_${i}`);
+                    if (audioFile) {
+                        // Delete old audio file
+                        if (existingEp.audioFile) {
+                            const oldPath = path.join(__dirname, '..', existingEp.audioFile);
+                            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+                        }
+                        epEdits.push({ field: 'Audio File', oldValue: existingEp.audioFile || 'none', newValue: `/uploads/${audioFile.filename}`, editedAt: now });
+                        existingEp.audioFile = `/uploads/${audioFile.filename}`;
+                    }
+
+                    if (epEdits.length > 0) {
+                        existingEp.editHistory = [...(existingEp.editHistory || []), ...epEdits];
+                        await existingEp.save();
+                    }
+                    updatedEpisodes.push(existingEp);
+                }
+            }
+        }
+
+        const allEpisodes = await Episode.find({ podcast: podcast._id }).sort({ createdAt: 1 });
+        res.json({ podcast, episodes: allEpisodes, message: 'Podcast updated successfully' });
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 // Delete podcast
 router.delete('/:id', auth, async (req, res) => {
     try {

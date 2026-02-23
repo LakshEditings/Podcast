@@ -98,6 +98,14 @@ export default function PodcastDetail({ onPlay }) {
         .qp-btn:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
         .no-data { text-align:center; padding:40px; color:var(--text-muted); font-size:0.85rem; }
 
+        .edit-history-card { background:var(--bg-card); border:1px solid rgba(251,191,36,0.3); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:20px; }
+        .edit-history-card h3 { font-size:0.9rem; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+        .eh-item { display:flex; gap:8px; align-items:center; padding:6px 10px; background:rgba(251,191,36,0.06); border-radius:var(--radius-sm); margin-bottom:4px; font-size:0.75rem; flex-wrap:wrap; }
+        .eh-field { font-weight:700; color:var(--warning); min-width:70px; }
+        .eh-old { color:var(--danger); text-decoration:line-through; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .eh-new { color:var(--success); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .eh-time { color:var(--text-muted); margin-left:auto; font-size:0.65rem; }
+
         .lb-container { animation:fadeIn 0.4s ease-out; }
         .lb-header-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px; margin-bottom:16px; display:flex; align-items:center; gap:16px; }
         .lb-trophy { font-size:2.5rem; }
@@ -127,6 +135,20 @@ export default function PodcastDetail({ onPlay }) {
                     </div>
                 </div>
                 <p className="pd-desc fade-in">{podcast.description}</p>
+                {podcast.editHistory?.length > 0 && (
+                    <div className="edit-history-card fade-in">
+                        <h3>📝 Edit History</h3>
+                        {podcast.editHistory.map((h, i) => (
+                            <div key={i} className="eh-item">
+                                <span className="eh-field">{h.field}</span>
+                                <span className="eh-old">{h.oldValue}</span>
+                                <span>→</span>
+                                <span className="eh-new">{h.newValue}</span>
+                                <span className="eh-time">{new Date(h.editedAt).toLocaleString()}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
                 <div className="pd-actions fade-in">
                     <button className={`pd-sub-btn ${subscribed ? 'active' : ''}`} onClick={() => setSubscribed(!subscribed)}>{subscribed ? '✓ Subscribed' : 'Subscribe'}</button>
                     <button className={`pd-act-btn ${liked ? 'liked' : ''}`} onClick={() => setLiked(!liked)}><FiHeart size={18} /></button>

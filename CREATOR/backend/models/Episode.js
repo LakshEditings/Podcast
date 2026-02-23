@@ -5,5 +5,9 @@ const episodeSchema = new mongoose.Schema({
     duration: { type: String, default: '00:00' }, listens: { type: Number, default: 0 },
     captions: { type: String, default: '' },
     audioFile: { type: String, default: '' },
+    editHistory: [{
+        field: String, oldValue: String, newValue: String,
+        editedAt: { type: Date, default: Date.now },
+    }],
 }, { timestamps: true });
 export default mongoose.model('Episode', episodeSchema);

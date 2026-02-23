@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiUpload, FiBarChart2, FiUsers, FiSettings } from 'react-icons/fi';
+import { FiHome, FiUpload, FiBarChart2, FiUsers, FiSettings, FiList } from 'react-icons/fi';
 
 const items = [
     { path: '/', icon: FiHome, label: 'Dashboard' },
     { path: '/upload', icon: FiUpload, label: 'Upload' },
+    { path: '/my-podcasts', icon: FiList, label: 'My Podcasts' },
     { path: '/analytics', icon: FiBarChart2, label: 'Analytics' },
     { path: '/subscribers', icon: FiUsers, label: 'Audience' },
     { path: '/settings', icon: FiSettings, label: 'Settings' },

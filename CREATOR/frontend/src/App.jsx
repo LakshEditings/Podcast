@@ -8,6 +8,7 @@ import Upload from './pages/Upload';
 import Analytics from './pages/Analytics';
 import Subscribers from './pages/Subscribers';
 import Settings from './pages/Settings';
+import MyPodcasts from './pages/MyPodcasts';
 
 function AppContent() {
   const location = useLocation();
@@ -27,6 +28,7 @@ function AppContent() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/upload" element={<Upload />} />
+          <Route path="/my-podcasts" element={<MyPodcasts />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/subscribers" element={<Subscribers />} />
           <Route path="/settings" element={<Settings />} />
