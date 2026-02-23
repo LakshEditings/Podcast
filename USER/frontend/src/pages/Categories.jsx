@@ -1,12 +1,30 @@
 import { useNavigate } from 'react-router-dom';
-import { mockCategories, mockPodcasts } from '../data/mockData';
 import PodcastCard from '../components/PodcastCard';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+const API = 'http://localhost:5001/api';
+const defaultCategories = [
+    { name: 'Technology', emoji: '💻' }, { name: 'Wellness', emoji: '🧘' },
+    { name: 'True Crime', emoji: '🔍' }, { name: 'Business', emoji: '🚀' },
+    { name: 'History', emoji: '📜' }, { name: 'Comedy', emoji: '😂' },
+    { name: 'Science', emoji: '🔬' }, { name: 'Music', emoji: '🎵' },
+    { name: 'Sports', emoji: '⚽' }, { name: 'Education', emoji: '📚' },
+];
 
 export default function Categories({ onPlay }) {
-    const navigate = useNavigate();
     const [selected, setSelected] = useState(null);
-    const filtered = selected ? mockPodcasts.filter(p => p.category === selected) : [];
+    const [podcasts, setPodcasts] = useState([]);
+
+    useEffect(() => {
+        fetch(`${API}/podcasts`)
+            .then(r => r.json())
+            .then(data => setPodcasts(data))
+            .catch(() => { });
+    }, []);
+
+    const filtered = selected ? podcasts.filter(p => p.category === selected) : [];
+    const catCounts = {};
+    podcasts.forEach(p => { catCounts[p.category] = (catCounts[p.category] || 0) + 1; });
 
     return (
         <>
@@ -30,18 +48,18 @@ export default function Categories({ onPlay }) {
             <div className="page-container">
                 <h1 className="page-title fade-in">Browse Categories</h1>
                 <div className="cat-grid">
-                    {mockCategories.map((c, i) => (
+                    {defaultCategories.map((c, i) => (
                         <div key={c.name} className={`cat-card fade-in ${selected === c.name ? 'active' : ''}`} style={{ animationDelay: `${i * 0.04}s` }} onClick={() => setSelected(selected === c.name ? null : c.name)}>
                             <span className="cat-emoji">{c.emoji}</span>
                             <span className="cat-name">{c.name}</span>
-                            <span className="cat-count">{c.count} podcasts</span>
+                            <span className="cat-count">{catCounts[c.name] || 0} podcasts</span>
                         </div>
                     ))}
                 </div>
                 {selected && (
                     <div className="cat-results fade-in">
                         <div className="cat-results-title"><span>{selected} Podcasts</span><button className="cat-clear" onClick={() => setSelected(null)}>Clear</button></div>
-                        {filtered.length > 0 ? <div className="results-grid">{filtered.map(p => <PodcastCard key={p.id} podcast={p} onPlay={onPlay} />)}</div> : <p className="empty-msg">No podcasts in this category yet</p>}
+                        {filtered.length > 0 ? <div className="results-grid">{filtered.map(p => <PodcastCard key={p._id} podcast={p} onPlay={onPlay} />)}</div> : <p className="empty-msg">No podcasts in this category yet</p>}
                     </div>
                 )}
             </div>

@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 export default function PodcastCard({ podcast, onPlay }) {
     const navigate = useNavigate();
     const colors = ['#5C7285', '#818C78', '#A7B49E', '#7a6b5d', '#6b7a8a'];
-    const color = colors[podcast.id % colors.length];
+    const idx = typeof podcast._id === 'string' ? podcast._id.charCodeAt(podcast._id.length - 1) : (podcast.id || 0);
+    const color = colors[idx % colors.length];
+    const podId = podcast._id || podcast.id;
     return (
         <>
             <style>{`
@@ -21,17 +23,17 @@ export default function PodcastCard({ podcast, onPlay }) {
         .pc-badge { display:inline-flex; padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:600; background:rgba(92,114,133,0.2); color:var(--accent); }
         .podcast-card-eps { font-size:0.7rem; color:var(--text-secondary); }
       `}</style>
-            <div className="podcast-card fade-in" onClick={() => navigate(`/podcast/${podcast.id}`)}>
+            <div className="podcast-card fade-in" onClick={() => navigate(`/podcast/${podId}`)}>
                 <div className="podcast-card-cover" style={{ background: `linear-gradient(135deg, ${color}, ${color}99)` }}>
                     <span className="podcast-card-emoji">{podcast.emoji || '🎙️'}</span>
-                    <button className="podcast-card-play" onClick={e => { e.stopPropagation(); onPlay(podcast); }}><FiPlay size={18} /></button>
+                    <button className="podcast-card-play" onClick={e => { e.stopPropagation(); onPlay?.(podcast); }}><FiPlay size={18} /></button>
                 </div>
                 <div className="podcast-card-body">
                     <h4 className="podcast-card-title">{podcast.title}</h4>
-                    <p className="podcast-card-creator">{podcast.creator}</p>
+                    <p className="podcast-card-creator">{podcast.creatorName || podcast.creator}</p>
                     <div className="podcast-card-meta">
                         <span className="pc-badge">{podcast.category}</span>
-                        <span className="podcast-card-eps">{podcast.episodes} eps</span>
+                        <span className="podcast-card-eps">{podcast.episodeCount ?? podcast.episodes} eps</span>
                     </div>
                 </div>
             </div>

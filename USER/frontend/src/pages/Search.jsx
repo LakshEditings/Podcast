@@ -1,15 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiSearch, FiMic, FiX } from 'react-icons/fi';
 import PodcastCard from '../components/PodcastCard';
-import { mockPodcasts, languages } from '../data/mockData';
+
+const API = 'http://localhost:5001/api';
+const languages = ['English', 'Hindi', 'Spanish', 'French', 'German', 'Japanese'];
 
 export default function Search({ onPlay }) {
     const [query, setQuery] = useState('');
     const [lang, setLang] = useState('All');
     const [listening, setListening] = useState(false);
+    const [podcasts, setPodcasts] = useState([]);
 
-    const filtered = mockPodcasts.filter(p => {
-        const mq = !query || p.title.toLowerCase().includes(query.toLowerCase()) || p.creator.toLowerCase().includes(query.toLowerCase()) || p.category.toLowerCase().includes(query.toLowerCase());
+    useEffect(() => {
+        fetch(`${API}/podcasts`)
+            .then(r => r.json())
+            .then(data => setPodcasts(data))
+            .catch(() => { });
+    }, []);
+
+    const filtered = podcasts.filter(p => {
+        const mq = !query || p.title.toLowerCase().includes(query.toLowerCase()) || (p.creatorName || '').toLowerCase().includes(query.toLowerCase()) || p.category.toLowerCase().includes(query.toLowerCase());
         const ml = lang === 'All' || p.language === lang;
         return mq && ml;
     });
@@ -52,7 +62,7 @@ export default function Search({ onPlay }) {
                     <button className={`lang-chip ${lang === 'All' ? 'active' : ''}`} onClick={() => setLang('All')}>All</button>
                     {languages.map(l => <button key={l} className={`lang-chip ${lang === l ? 'active' : ''}`} onClick={() => setLang(l)}>{l}</button>)}
                 </div>
-                <div className="search-grid">{filtered.map(p => <PodcastCard key={p.id} podcast={p} onPlay={onPlay} />)}</div>
+                <div className="search-grid">{filtered.map(p => <PodcastCard key={p._id} podcast={p} onPlay={onPlay} />)}</div>
                 {filtered.length === 0 && <div className="empty-state fade-in"><span>🔍</span><p>No podcasts found</p></div>}
             </div>
         </>
