@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import { FiUpload, FiPlus, FiX, FiCheck, FiFlag, FiChevronDown, FiChevronUp, FiTrash2 } from 'react-icons/fi';
+import { FiUpload, FiPlus, FiX, FiCheck, FiFlag, FiChevronDown, FiChevronUp, FiTrash2, FiMusic } from 'react-icons/fi';
 
+const API = 'http://localhost:5002/api';
 const categories = ['Technology', 'Wellness', 'True Crime', 'Business', 'History', 'Comedy', 'Science', 'Music', 'Sports', 'Education'];
 
 export default function Upload() {
@@ -12,16 +13,18 @@ export default function Upload() {
         quizzes: Array.from({ length: 5 }, () => ({ question: '', options: ['', '', '', ''], correct: 0 })),
         showQuiz: false,
         pollFlags: [],
+        audioFile: null,
+        captions: '',
     }]);
-    const [captions, setCaptions] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const sliderRefs = useRef({});
+    const [error, setError] = useState('');
+    const fileInputRefs = useRef({});
 
     const addEpisode = () => setEpisodes(e => [...e, {
         title: '', description: '', duration: '30:00',
         quizzes: Array.from({ length: 5 }, () => ({ question: '', options: ['', '', '', ''], correct: 0 })),
-        showQuiz: false,
-        pollFlags: [],
+        showQuiz: false, pollFlags: [], audioFile: null, captions: '',
     }]);
     const updateEp = (i, field, val) => setEpisodes(e => e.map((ep, idx) => idx === i ? { ...ep, [field]: val } : ep));
     const removeEp = (i) => setEpisodes(e => e.filter((_, idx) => idx !== i));
@@ -35,7 +38,7 @@ export default function Upload() {
 
     const addPollFlag = (ei, percentage) => {
         setEpisodes(eps => eps.map((ep, i) => i !== ei ? ep : {
-            ...ep, pollFlags: [...ep.pollFlags, { id: Date.now(), percentage: Math.round(percentage), question: '', options: ['', ''], editing: true }]
+            ...ep, pollFlags: [...ep.pollFlags, { id: Date.now(), percentage: Math.round(percentage), question: '', options: ['', ''] }]
                 .sort((a, b) => a.percentage - b.percentage)
         }));
     };
@@ -75,7 +78,66 @@ export default function Upload() {
 
     const filledQuizCount = (quizzes) => quizzes.filter(q => q.question.trim() !== '').length;
 
-    const handleSubmit = () => { setSubmitted(true); setTimeout(() => setSubmitted(false), 3000); };
+    const formatFileSize = (bytes) => {
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    };
+
+    const handleSubmit = async () => {
+        setError('');
+        if (!title.trim() || !category) { setError('Please fill podcast title and category'); return; }
+        if (episodes.some(ep => !ep.title.trim())) { setError('All episodes need a title'); return; }
+
+        setSubmitting(true);
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', desc);
+            formData.append('category', category);
+            formData.append('language', 'English');
+            formData.append('creatorName', 'Creator');
+
+            // Add episode data as JSON (without audioFile objects)
+            const episodeData = episodes.map(ep => ({
+                title: ep.title, description: ep.description, duration: ep.duration,
+                captions: ep.captions,
+                quizzes: ep.quizzes.filter(q => q.question.trim()),
+                pollFlags: ep.pollFlags.filter(f => f.question.trim()),
+            }));
+            formData.append('episodes', JSON.stringify(episodeData));
+
+            // Add audio files separately (audioFile_0, audioFile_1, etc.)
+            episodes.forEach((ep, i) => {
+                if (ep.audioFile) formData.append(`audioFile_${i}`, ep.audioFile);
+            });
+
+            const res = await fetch(`${API}/podcasts`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Upload failed');
+            }
+
+            setSubmitted(true);
+            // Reset form
+            setTitle(''); setDesc(''); setCategory('');
+            setEpisodes([{
+                title: '', description: '', duration: '30:00',
+                quizzes: Array.from({ length: 5 }, () => ({ question: '', options: ['', '', '', ''], correct: 0 })),
+                showQuiz: false, pollFlags: [], audioFile: null, captions: '',
+            }]);
+            setTimeout(() => setSubmitted(false), 4000);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <>
@@ -93,9 +155,21 @@ export default function Upload() {
         .form-select { width:100%; padding:12px 16px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-md); color:var(--text-primary); font-size:0.85rem; }
         .ep-item { background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; margin-bottom:12px; position:relative; }
         .ep-item .ep-num { font-size:0.72rem; color:var(--accent); font-weight:700; margin-bottom:8px; }
-        .ep-remove { position:absolute; top:12px; right:12px; width:24px; height:24px; border-radius:50%; background:rgba(248,113,113,0.15); color:var(--danger); display:flex; align-items:center; justify-content:center; font-size:0.7rem; }
-        .add-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; background:transparent; border:1px dashed var(--border); border-radius:var(--radius-md); color:var(--text-muted); font-size:0.82rem; width:100%; justify-content:center; transition:var(--transition); }
+        .ep-remove { position:absolute; top:12px; right:12px; width:24px; height:24px; border-radius:50%; background:rgba(248,113,113,0.15); color:var(--danger); display:flex; align-items:center; justify-content:center; font-size:0.7rem; cursor:pointer; border:none; }
+        .add-btn { display:flex; align-items:center; gap:8px; padding:10px 20px; background:transparent; border:1px dashed var(--border); border-radius:var(--radius-md); color:var(--text-muted); font-size:0.82rem; width:100%; justify-content:center; transition:var(--transition); cursor:pointer; }
         .add-btn:hover { border-color:var(--primary); color:var(--accent); }
+
+        /* Audio file upload */
+        .audio-upload { margin-bottom:16px; }
+        .audio-drop-zone { border:2px dashed var(--border); border-radius:var(--radius-md); padding:20px; text-align:center; cursor:pointer; transition:var(--transition); }
+        .audio-drop-zone:hover { border-color:var(--primary); background:rgba(167,180,158,0.05); }
+        .audio-drop-zone.has-file { border-color:var(--success); background:rgba(74,222,128,0.05); }
+        .audio-drop-icon { font-size:1.5rem; margin-bottom:8px; }
+        .audio-drop-text { font-size:0.82rem; color:var(--text-muted); }
+        .audio-file-info { display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.2); border-radius:var(--radius-md); margin-top:8px; }
+        .audio-file-name { font-size:0.8rem; font-weight:600; color:var(--text-primary); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .audio-file-size { font-size:0.72rem; color:var(--text-muted); }
+        .audio-file-remove { width:20px; height:20px; border-radius:50%; background:rgba(248,113,113,0.15); color:var(--danger); display:flex; align-items:center; justify-content:center; font-size:0.65rem; cursor:pointer; border:none; flex-shrink:0; }
 
         /* Quiz section per episode */
         .quiz-toggle { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; margin-top:12px; background:rgba(92,114,133,0.1); border:1px solid var(--border); border-radius:var(--radius-md); cursor:pointer; transition:var(--transition); }
@@ -127,11 +201,13 @@ export default function Upload() {
         .poll-flag-item { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-top:10px; position:relative; }
         .poll-flag-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
         .poll-flag-time { font-size:0.72rem; font-weight:700; color:var(--warning); background:rgba(251,191,36,0.15); padding:2px 10px; border-radius:8px; display:flex; align-items:center; gap:4px; }
-        .poll-flag-remove { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(248,113,113,0.1); color:var(--danger); font-size:0.7rem; }
+        .poll-flag-remove { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(248,113,113,0.1); color:var(--danger); font-size:0.7rem; cursor:pointer; border:none; }
 
-        .submit-btn { width:100%; padding:16px; background:var(--gradient-primary); color:white; border-radius:var(--radius-md); font-weight:700; font-size:1rem; transition:var(--transition); display:flex; align-items:center; justify-content:center; gap:8px; }
-        .submit-btn:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+        .submit-btn { width:100%; padding:16px; background:var(--gradient-primary); color:white; border-radius:var(--radius-md); font-weight:700; font-size:1rem; transition:var(--transition); display:flex; align-items:center; justify-content:center; gap:8px; border:none; cursor:pointer; }
+        .submit-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+        .submit-btn:disabled { opacity:0.6; cursor:not-allowed; }
         .success-msg { text-align:center; padding:16px; background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.3); border-radius:var(--radius-md); color:var(--success); font-weight:600; margin-top:16px; }
+        .error-msg { text-align:center; padding:12px; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:var(--radius-md); color:var(--danger); font-weight:600; margin-top:16px; font-size:0.85rem; }
       `}</style>
             <div className="upload-page">
                 <h1 className="fade-in">📤 Upload Podcast</h1>
@@ -144,7 +220,7 @@ export default function Upload() {
                     <div className="form-group"><label className="form-label">Category</label><select className="form-select" value={category} onChange={e => setCategory(e.target.value)}><option value="">Select category</option>{categories.map(c => <option key={c}>{c}</option>)}</select></div>
                 </div>
 
-                {/* Episodes with Quizzes & Poll Flags */}
+                {/* Episodes with Audio, Quizzes & Poll Flags */}
                 {episodes.map((ep, ei) => (
                     <div key={ei} className="form-section fade-in">
                         <h3>🎙️ Episode {ei + 1}</h3>
@@ -153,6 +229,34 @@ export default function Upload() {
                             <div className="form-group"><label className="form-label">Episode Title</label><input className="form-input" placeholder="Episode title" value={ep.title} onChange={e => updateEp(ei, 'title', e.target.value)} /></div>
                             <div className="form-group"><label className="form-label">Description</label><textarea className="form-input" placeholder="Episode description" value={ep.description} onChange={e => updateEp(ei, 'description', e.target.value)} style={{ minHeight: '60px' }} /></div>
                             <div className="form-group"><label className="form-label">Duration (mm:ss)</label><input className="form-input" placeholder="30:00" value={ep.duration} onChange={e => updateEp(ei, 'duration', e.target.value)} style={{ maxWidth: 160 }} /></div>
+
+                            {/* Audio File Upload */}
+                            <div className="audio-upload">
+                                <label className="form-label">🎵 Audio File</label>
+                                <input
+                                    type="file"
+                                    accept=".mp3,.wav,.m4a,.ogg,.aac,.flac"
+                                    ref={el => fileInputRefs.current[ei] = el}
+                                    style={{ display: 'none' }}
+                                    onChange={e => { if (e.target.files[0]) updateEp(ei, 'audioFile', e.target.files[0]); }}
+                                />
+                                {!ep.audioFile ? (
+                                    <div className="audio-drop-zone" onClick={() => fileInputRefs.current[ei]?.click()}>
+                                        <div className="audio-drop-icon"><FiMusic size={28} /></div>
+                                        <div className="audio-drop-text">Click to select audio file<br /><span style={{ fontSize: '0.7rem' }}>MP3, WAV, M4A, OGG, AAC, FLAC (max 100MB)</span></div>
+                                    </div>
+                                ) : (
+                                    <div className="audio-file-info">
+                                        <FiMusic size={16} style={{ color: 'var(--success)', flexShrink: 0 }} />
+                                        <span className="audio-file-name">{ep.audioFile.name}</span>
+                                        <span className="audio-file-size">{formatFileSize(ep.audioFile.size)}</span>
+                                        <button className="audio-file-remove" onClick={() => { updateEp(ei, 'audioFile', null); if (fileInputRefs.current[ei]) fileInputRefs.current[ei].value = ''; }}><FiX size={10} /></button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Captions per episode */}
+                            <div className="form-group"><label className="form-label">💬 Captions</label><textarea className="form-input" placeholder="Paste or type captions (timestamp: text)" value={ep.captions} onChange={e => updateEp(ei, 'captions', e.target.value)} style={{ minHeight: '60px' }} /></div>
 
                             {/* Quiz Section */}
                             <div className="quiz-toggle" onClick={() => updateEp(ei, 'showQuiz', !ep.showQuiz)}>
@@ -185,7 +289,7 @@ export default function Upload() {
                             {/* Poll Timeline Flags */}
                             <div className="poll-section">
                                 <div className="poll-section-title"><FiFlag size={14} /> Poll Flags</div>
-                                <p className="poll-section-hint">Click on the timeline bar below to place poll flags. Each flag = 1 poll shown to listeners at that timestamp.</p>
+                                <p className="poll-section-hint">Click on the timeline to place poll flags. Each flag = 1 poll shown to listeners at that point.</p>
                                 <div className="timeline-container">
                                     <div className="timeline-bar" onClick={(e) => handleSliderClick(ei, e)}>
                                         {ep.pollFlags.map(flag => (
@@ -220,14 +324,11 @@ export default function Upload() {
                 ))}
                 <button className="add-btn" onClick={addEpisode} style={{ marginBottom: 20 }}><FiPlus size={16} /> Add Episode</button>
 
-                {/* Captions */}
-                <div className="form-section fade-in">
-                    <h3>💬 Captions</h3>
-                    <div className="form-group"><textarea className="form-input" placeholder="Paste or type captions here... (timestamp: text format)" value={captions} onChange={e => setCaptions(e.target.value)} /></div>
-                </div>
-
-                <button className="submit-btn" onClick={handleSubmit}><FiUpload size={18} /> Publish Podcast</button>
+                <button className="submit-btn" onClick={handleSubmit} disabled={submitting}>
+                    {submitting ? '⏳ Uploading...' : <><FiUpload size={18} /> Publish Podcast</>}
+                </button>
                 {submitted && <div className="success-msg fade-in"><FiCheck size={16} /> Podcast published successfully! 🎉</div>}
+                {error && <div className="error-msg fade-in">❌ {error}</div>}
             </div>
         </>
     );
