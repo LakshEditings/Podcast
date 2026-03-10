@@ -47,10 +47,10 @@ export default function Dashboard() {
             <div className="dashboard">
                 <div className="dash-header fade-in"><h1>Creator Dashboard</h1><p>Welcome back, Sarah! Here's your channel overview.</p></div>
                 <div className="stats-grid">
-                    <StatsCard icon="🎧" label="Total Listens" value="42.7K" change={12.5} color="#5C7285" />
-                    <StatsCard icon="👥" label="Subscribers" value="12,400" change={8.2} color="#818C78" />
-                    <StatsCard icon="📈" label="Avg. Listen Time" value="28 min" change={-3.1} color="#A7B49E" />
-                    <StatsCard icon="⭐" label="Rating" value="4.8" change={2.0} color="#E2E0C8" />
+                    <StatsCard icon="🎧" label="Total Listens" value="42.7K" change={12.5} color="var(--APrimary1)" />
+                    <StatsCard icon="👥" label="Subscribers" value="12,400" change={8.2} color="var(--APrimary2)" />
+                    <StatsCard icon="📈" label="Avg. Listen Time" value="28 min" change={-3.1} color="var(--ASecondary1)" />
+                    <StatsCard icon="⭐" label="Rating" value="4.8" change={2.0} color="var(--ASecondary2)" />
                 </div>
                 <div className="dash-row">
                     <div className="dash-section fade-in">

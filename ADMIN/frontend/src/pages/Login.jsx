@@ -55,7 +55,7 @@ export default function Login() {
         .auth-btn:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
         .auth-btn:disabled { opacity:0.7; }
         .spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.6s linear infinite; }
-        .auth-error { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:#f87171; padding:10px 16px; border-radius:var(--radius-md); font-size:0.8rem; margin-bottom:16px; animation:fadeIn 0.3s ease-out; }
+        .auth-error { background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:var(--danger); padding:10px 16px; border-radius:var(--radius-md); font-size:0.8rem; margin-bottom:16px; animation:fadeIn 0.3s ease-out; }
       `}</style>
             <div className="auth-page">
                 <div className="auth-bg"><div className="circle c1" /><div className="circle c2" /><div className="circle c3" /></div>

@@ -52,9 +52,9 @@ export default function Analytics() {
             <div className="analytics">
                 <h1 className="fade-in">📊 Analytics</h1>
                 <div className="stats-row">
-                    <StatsCard icon="👁️" label="Views This Week" value="15.2K" change={18.5} color="#5C7285" />
-                    <StatsCard icon="⏱️" label="Avg. Listen Duration" value="32 min" change={5.2} color="#818C78" />
-                    <StatsCard icon="📈" label="Completion Rate" value="72%" change={-2.1} color="#A7B49E" />
+                    <StatsCard icon="👁️" label="Views This Week" value="15.2K" change={18.5} color="var(--APrimary1)" />
+                    <StatsCard icon="⏱️" label="Avg. Listen Duration" value="32 min" change={5.2} color="var(--APrimary2)" />
+                    <StatsCard icon="📈" label="Completion Rate" value="72%" change={-2.1} color="var(--ASecondary1)" />
                 </div>
                 <div className="chart-section fade-in">
                     <h2>Weekly Listens</h2>

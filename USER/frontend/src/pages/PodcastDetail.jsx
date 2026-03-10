@@ -22,7 +22,7 @@ export default function PodcastDetail({ onPlay }) {
     const [quizData, setQuizData] = useState(null);
     const [selectedEpForQuiz, setSelectedEpForQuiz] = useState(null);
     const [tab, setTab] = useState('episodes');
-    const colors = ['#5C7285', '#818C78', '#A7B49E', '#7a6b5d', '#6b7a8a'];
+    const colors = ['var(--APrimary1)', 'var(--APrimary2)', 'var(--ASecondary1)', 'var(--ASecondary2)', 'var(--AOther2)'];
 
     useEffect(() => {
         fetch(`${API}/podcasts/${id}`)
@@ -84,7 +84,7 @@ export default function PodcastDetail({ onPlay }) {
         .pd-sub-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
         .pd-act-btn { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--bg-card); color:var(--text-primary); border:1px solid var(--border); transition:var(--transition); }
         .pd-act-btn:hover { background:var(--bg-card-hover); }
-        .pd-act-btn.liked { color:#f87171; background:rgba(248,113,113,0.1); border-color:rgba(248,113,113,0.3); }
+        .pd-act-btn.liked { color:var(--danger); background:rgba(248,113,113,0.1); border-color:rgba(248,113,113,0.3); }
         .pd-act-btn.notif-on { color:var(--warning); background:rgba(251,191,36,0.1); border-color:rgba(251,191,36,0.3); }
         .pd-tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--bg-card); border-radius:var(--radius-md); padding:4px; border:1px solid var(--border); overflow-x:auto; }
         .pd-tab { flex:1; padding:10px; border-radius:var(--radius-sm); background:transparent; color:var(--text-muted); font-size:0.82rem; font-weight:600; transition:var(--transition); white-space:nowrap; min-width:fit-content; }

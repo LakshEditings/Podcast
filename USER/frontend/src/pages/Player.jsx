@@ -197,10 +197,10 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
     return (
         <>
             <style>{`
-        .player-page { min-height:100vh; padding:20px; display:flex; flex-direction:column; background:linear-gradient(180deg, #2a333d 0%, var(--bg-dark) 50%); }
+        .player-page { min-height:100vh; padding:20px; display:flex; flex-direction:column; background:linear-gradient(180deg, var(--bg-card-hover) 0%, var(--bg-dark) 50%); }
         .player-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; }
         .p-back { width:40px; height:40px; border-radius:50%; background:var(--bg-card); color:var(--text-primary); display:flex; align-items:center; justify-content:center; border:1px solid var(--border); }
-        .p-np { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; background:linear-gradient(90deg, var(--text-muted) 0%, var(--text-muted) 30%, #E2E0C8 50%, var(--text-muted) 70%, var(--text-muted) 100%); background-size:200% 100%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:shine 2.5s ease-in-out infinite; }
+        .p-np { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; background:linear-gradient(90deg, var(--text-muted) 0%, var(--text-muted) 30%, var(--ASecondary2) 50%, var(--text-muted) 70%, var(--text-muted) 100%); background-size:200% 100%; -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; animation:shine 2.5s ease-in-out infinite; }
         @keyframes shine { 0% { background-position:200% center; } 100% { background-position:-200% center; } }
         .player-art { width:240px; height:240px; border-radius:var(--radius-xl); margin:0 auto 32px; display:flex; align-items:center; justify-content:center; font-size:6rem; box-shadow:var(--shadow-lg); }
         .player-info { text-align:center; margin-bottom:24px; }
@@ -240,11 +240,11 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .caption-text { color:var(--text-secondary); line-height:1.4; }
         .summary-box { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; margin-bottom:16px; }
         .summary-box h4 { font-size:0.85rem; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
-        .summary-box .premium-badge { padding:3px 8px; border-radius:10px; background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#000; font-size:0.6rem; font-weight:700; }
+        .summary-box .premium-badge { padding:3px 8px; border-radius:10px; background:linear-gradient(135deg,var(--warning),#f59e0b); color:#000; font-size:0.6rem; font-weight:700; }
         .summary-box p { font-size:0.82rem; color:var(--text-secondary); line-height:1.6; }
         .moments-list { margin-bottom:16px; }
         .moments-list h4 { font-size:0.85rem; margin-bottom:8px; }
-        .moment-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; margin:0 6px 6px 0; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:16px; font-size:0.75rem; color:#f87171; }
+        .moment-chip { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; margin:0 6px 6px 0; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); border-radius:16px; font-size:0.75rem; color:var(--danger); }
         .poll-toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(251,191,36,0.95); color:#000; padding:12px 24px; border-radius:var(--radius-md); font-weight:700; font-size:0.85rem; z-index:1000; animation:slideDown 0.4s ease-out; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
         @keyframes slideDown { from { transform:translateX(-50%) translateY(-40px); opacity:0; } to { transform:translateX(-50%) translateY(0); opacity:1; } }
         .poll-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:999; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.3s ease-out; }
@@ -252,7 +252,7 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
         .poll-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
         .poll-modal-header h3 { font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px; }
         .poll-countdown { display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:20px; font-size:0.8rem; font-weight:700; }
-        .poll-countdown.warning { background:rgba(248,113,113,0.15); color:#f87171; }
+        .poll-countdown.warning { background:rgba(248,113,113,0.15); color:var(--danger); }
         .poll-countdown.normal { background:rgba(251,191,36,0.15); color:var(--warning); }
         .poll-question { font-size:0.95rem; font-weight:600; margin-bottom:16px; line-height:1.5; }
         .poll-option-btn { width:100%; padding:14px 18px; margin-bottom:8px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-md); color:var(--text-primary); font-size:0.88rem; text-align:left; transition:all 0.3s ease; cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
@@ -298,7 +298,7 @@ export default function Player({ currentPodcast, isPlaying, onTogglePlay }) {
                     <span className="p-np">Now Playing</span>
                     <div style={{ width: 40 }} />
                 </div>
-                <div className="player-art fade-in" style={{ background: `linear-gradient(135deg, #5C7285, #818C78)` }}>{pod.emoji || '🎧'}</div>
+                <div className="player-art fade-in" style={{ background: `linear-gradient(135deg, var(--APrimary1), var(--APrimary2))` }}>{pod.emoji || '🎧'}</div>
                 <div className="player-info fade-in">
                     <h1>{pod.episodeTitle || pod.title}</h1>
                     <p>{pod.creatorName || pod.creator}</p>

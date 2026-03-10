@@ -1,0 +1,82 @@
+/* ===========================
+   🎵 PODCAST APP — Shared Theme
+   Change these variables ONCE to
+   update ALL 3 frontends (USER, CREATOR, ADMIN)
+   =========================== */
+
+/* Regular Colour Palette (Light Mode — default) */
+:root {
+    --APrimary1: #5C7285;
+    --APrimary2: #818C78;
+    --ASecondary1: #A7B49E;
+    --ASecondary2: #E2E0C8;
+    --ASecondary3: #f0f2f5;
+    --AOther1: #ffffff;
+    --AOther2: #f5f6f8;
+
+    /* Derived from palette */
+    --gradient-primary: linear-gradient(135deg, var(--APrimary1), var(--APrimary2));
+    --text-primary: #1a1f25;
+    --text-secondary: #4a5568;
+    --text-muted: #6b7280;
+    --bg-dark: var(--ASecondary3);
+    --bg-card: var(--AOther1);
+    --bg-card-hover: var(--AOther2);
+    --bg-input: var(--AOther2);
+    --border: #d1d5db;
+    --primary: var(--APrimary1);
+    --secondary: var(--APrimary2);
+    --accent: var(--ASecondary1);
+    --cream: var(--ASecondary2);
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Adaptive colors for overlays */
+    --nav-bg: rgba(255, 255, 255, 0.95);
+    --sidebar-active-bg: rgba(92, 114, 133, 0.1);
+    --overlay-subtle: rgba(92, 114, 133, 0.08);
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+    --BPrimary1: #5C7285;
+    --BPrimary2: #818C78;
+    --BSecondary1: #A7B49E;
+    --BSecondary2: #E2E0C8;
+    --BSecondary3: #1a1f25;
+    --BOther1: #232a32;
+    --BOther2: #2a333d;
+
+    /* Override derived variables for dark mode */
+    --gradient-primary: linear-gradient(135deg, var(--BPrimary1), var(--BPrimary2));
+    --text-primary: #f0f0f0;
+    --text-secondary: #a0a8b4;
+    --text-muted: #6b7280;
+    --bg-dark: var(--BSecondary3);
+    --bg-card: var(--BOther1);
+    --bg-card-hover: var(--BOther2);
+    --bg-input: var(--BOther2);
+    --border: #333d48;
+    --primary: var(--BPrimary1);
+    --secondary: var(--BPrimary2);
+    --accent: var(--BSecondary1);
+    --cream: var(--BSecondary2);
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+    /* Adaptive colors for overlays */
+    --nav-bg: rgba(26, 31, 37, 0.95);
+    --sidebar-active-bg: rgba(92, 114, 133, 0.2);
+    --overlay-subtle: rgba(92, 114, 133, 0.15);
+}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function PodcastCard({ podcast, onPlay }) {
     const navigate = useNavigate();
-    const colors = ['#5C7285', '#818C78', '#A7B49E', '#7a6b5d', '#6b7a8a'];
+    const colors = ['var(--APrimary1)', 'var(--APrimary2)', 'var(--ASecondary1)', 'var(--ASecondary2)', 'var(--AOther2)'];
     const idx = typeof podcast._id === 'string' ? podcast._id.charCodeAt(podcast._id.length - 1) : (podcast.id || 0);
     const color = colors[idx % colors.length];
     const podId = podcast._id || podcast.id;

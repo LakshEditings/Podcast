@@ -18,10 +18,10 @@ export default function Dashboard() {
     }, []);
 
     const statCards = stats ? [
-        { icon: '👥', label: 'Total Users', value: stats.users.toLocaleString(), color: '#5C7285' },
-        { icon: '🎙️', label: 'Total Creators', value: stats.creators.toLocaleString(), color: '#818C78' },
-        { icon: '🎧', label: 'Total Podcasts', value: stats.podcasts.toLocaleString(), color: '#A7B49E' },
-        { icon: '📊', label: 'Total Listens', value: stats.totalListens.toLocaleString(), color: '#E2E0C8' },
+        { icon: '👥', label: 'Total Users', value: stats.users.toLocaleString(), color: 'var(--APrimary1)' },
+        { icon: '🎙️', label: 'Total Creators', value: stats.creators.toLocaleString(), color: 'var(--APrimary2)' },
+        { icon: '🎧', label: 'Total Podcasts', value: stats.podcasts.toLocaleString(), color: 'var(--ASecondary1)' },
+        { icon: '📊', label: 'Total Listens', value: stats.totalListens.toLocaleString(), color: 'var(--ASecondary2)' },
     ] : [];
 
     const recentActivity = [
